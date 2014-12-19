@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# FUNCTIONS
+usage ()
+{
+cat << EOF
+usage: $0 options
+
+Passbox command line password manager utility
+
+OPTIONS:
+   -h --help                Display this help
+   -p --password-only       Return the password as a plain text string
+EOF
+}
+
+pretty () {
+    perl -0007 -MJSON -ne'print to_json(from_json($_, {allow_nonref=>1}),{pretty=>1})."\n"'
+}
+
+
+search () {
+    gpg -q -d ~/.pass.gpg |  jsawk "if (this.Name.indexOf('$1') == -1) { return null; }"
+}
+
+search $1 | pretty | less -g

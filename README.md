@@ -6,6 +6,12 @@
 ### PREREQS
     - GnuPG
     - Bash
+
+### INSTALLING
+````
+curl -L https://raw.githubusercontent.com/RobBollons/passbox/master/passbox > ./passbox && chmod +x ./passbox
+````
+
 ### USAGE
 ````
 usage: passbox [action]

@@ -43,7 +43,7 @@ if {$force_conservative} {
 
 
 set timeout -1
-spawn passbox new
+spawn ../passbox new
 match_max 100000
 expect -exact "Name: "
 send -- "Test\r"

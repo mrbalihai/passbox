@@ -1,26 +1,427 @@
 #!/bin/bash
+#
+# Script for managing passwords in a symmetrically encrypted file using GnuPG.
+#
+# Copyright (C) 2015 Robert Bollons - All Rights Reserved
+# Permission to copy and modify is granted under the foo license
+# Version 2.0.0
+# Last revised: 26th July 2015
+# Licence: MIT
+#
+# Inspired by an article by Sam Stelfox on using Vim as a password manager: http://stelfox.net/blog/2013/11/using-vim-as-your-password-manager/
+# Heavily based on a similar password manager by drduh: https://github.com/drduh/pwd.sh
 
-# FUNCTIONS
-usage ()
-{
+set -o errtrace
+set -o nounset
+set -o pipefail
+
+gpg=$(which gpg)
+passbox=${PASSBOX_LOCATION:=~/pass-test.gpg}
+seperator="|"
+
+#######################################
+# HELPERS
+#######################################
+
+#######################################
+# Print an error message and then exit
+# Globals:
+#
+# Arguments:
+#   1 = the error message to output
+# Returns:
+#   The formatted error message
+#######################################
+fail () {
+    tput setaf 1 ; echo "Error: ${1}" ; tput sgr0
+    exit 1
+}
+
+#######################################
+# Make sure required programs are installed and can be executed.
+# Globals:
+#   gpg
+# Arguments:
+#
+# Returns:
+#
+#######################################
+check_deps () {
+    if [[ -z ${gpg} && ! -x ${gpg} ]] ; then
+      fail "GnuPG is not available"
+    fi
+}
+
+#######################################
+# Searches for an entry based on a given string (can be regex)
+# Globals:
+#
+# Arguments:
+#   1 = the string (regex) to search for
+# Returns:
+#   pass_vals_string = the first line found in the file
+#######################################
+search () {
+    if [ ! -s ${passbox} ] ; then
+        fail "No passwords found"
+    else
+        get_pass "Enter password to unlock ${passbox}: " ; echo
+        pass_vals_string=$(decrypt "${password}" "${passbox}" | grep -i "$1")
+
+        # TODO: Return multiple results
+        if [[ -z ${pass_vals_string} ]] ; then
+            fail "No entries found"
+        fi
+    fi
+}
+
+#######################################
+# Formats the result into a seperate row for each value
+# Globals:
+#   pass_vals_string = A string containing the unformatted password entry
+# Arguments:
+#
+# Returns:
+#   the formatted output
+#######################################
+format_result () {
+    split_line "${pass_vals_string}"
+    if [[ ${#pass_vals[@]} > 1 ]] ; then
+        echo -e "\nName:     ${pass_vals[0]}\nUsername: ${pass_vals[1]}\nPassword: ${pass_vals[2]}"
+    else
+        fail "Invalid entry, this will need manually correcting using an editor"
+    fi
+}
+
+#######################################
+# Generate a random password using GPG
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#   A random password of a desired length
+#######################################
+gen_pass () {
+    len=20
+    max=100
+    read -p "Password length? (default: ${len}, max: ${max}) " length
+    if [[ ${length} =~ ^[0-9]+$ ]] ; then
+        len=${length}
+    fi
+
+    # base64: 4 characters for every 3 bytes
+    ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
+}
+
+#######################################
+# Decrypt the password file with a given password
+# Globals:
+#   pass_vals_string = A string containing the unformatted password entry
+# Arguments:
+#   1 = the passphrase used to protect the file
+#   2 = the location of the password file
+# Returns:
+#   the decrypted file contents
+#######################################
+decrypt () {
+    ${gpg} \
+        --decrypt --armor --batch \
+        --command-fd 0 --passphrase "${1}" "${2}" 2>/dev/null
+}
+
+#######################################
+#  Encrypt the file contents
+# Globals:
+#   pass_vals_string = A string containing the unformatted password entry
+# Arguments:
+#   1 = the passphrase used to protect the file
+#   2 = the location of the password file
+#   3 = TODO: Figure out if this is needed
+# Returns:
+#   the decrypted file contents
+#######################################
+encrypt () {
+    ${gpg} \
+        --symmetric --armor --batch --yes \
+        --command-fd 0 --passphrase "${1}" \
+        --output "${2}" "${3}" 2>/dev/null
+}
+
+
+#######################################
+# Prompts for new password details
+# Globals:
+#
+# Arguments:
+#   1 (optional) = name of the password entry
+#   2 (optional) = username of the password entry
+#   3 (optional) = password of the password entry
+# Returns:
+#   passname = name of the password entry
+#   username = username of the password entry
+#   userpass = password of the password entry
+#######################################
+new_details () {
+    if [[ $# > 0 ]] ; then
+        passname="$1"
+    else
+        read -p "Name: " passname
+    fi
+
+    if [[ $# > 1 ]] ; then
+        read -p "Username (${2}): " username
+        if [[ -z"${username}" ]]; then
+            username="${2}"
+        fi
+    else
+        read -p "Username: " username
+    fi
+
+    read -p "Generate password? (y/n, default: y) " rand_pass
+    if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
+        if [[ $# > 1 ]] ; then
+            get_pass "Enter password for \"${username}\" (${3}): " ; echo
+            if [[ -z "${password}" ]]; then
+                userpass=${3}
+            fi
+        else
+            get_pass "Enter password for \"${username}\": " ; echo
+            if [[ -z ${password} ]] ; then
+                fail "No password provided"
+            fi
+        fi
+    else
+        userpass=$(gen_pass)
+        echo "Password: ${userpass}"
+    fi
+}
+
+#######################################
+# Write to the password file
+# Globals:
+#   passname = A string to use as the key (name of the entry)
+#   username = A string to use as the username
+#   userpass = A string to use as the password
+#   seperator = the seperator character to use between values
+#   passbox = the location of the password file
+# Arguments:
+#
+# Returns:
+#
+#######################################
+write_pass () {
+    if [ -z ${userpass+x} ] ; then
+        fail "Nothing to write"
+    else
+        new_entry="${passname}${seperator}${username}${seperator}${userpass}"
+    fi
+
+    if [[ -z "${password}" ]]; then
+        get_pass "Enter password to unlock ${passbox}: " ; echo
+    fi
+
+    # If passbox exists, decrypt it and filter out username, or bail on error.
+    # If successful, append new entry, or blank line.
+    # Filter out any blank lines.
+    # Finally, encrypt it all to a new safe file, or fail.
+    # If successful, update to new passbox file.
+    ( if [ -f ${passbox} ] ; then
+        decrypt "${password}" "${passbox}" | \
+        grep -v -e "^${username}|" || return
+        fi ; \
+        echo "${new_entry}" ) | \
+    grep -v -e "^[[:space:]]*$" | \
+    encrypt "${password}" "${passbox}".new - || fail "Write to passbox failed"
+    mv ${passbox}.new ${passbox}
+
+    tput setaf 2 ; echo "Done" ; tput sgr0
+}
+
+#######################################
+# Prompts for a password, hiding the contents with stars
+# Globals:
+#
+# Arguments:
+#   1 = The string to use when prompting for the password
+# Returns:
+#   password = The resulting password
+#######################################
+get_pass () {
+    password=''
+    prompt="${1}"
+    while IFS= read -p "${prompt}" -r -s -n 1 char ; do
+        if [[ ${char} == $'\0' ]] ; then
+            break
+        elif [[ ${char} == $'\177' ]] ; then
+            if [[ -z "${password}" ]] ; then
+                prompt=""
+            else
+                prompt=$'\b \b'
+                password="${password%?}"
+            fi
+        else
+            prompt="*"
+            password+="${char}"
+        fi
+    done
+
+}
+
+#######################################
+# Splits a line based on the given seperator into an array
+# Globals:
+#   seperator = the character to split the string on
+# Arguments:
+#   1 = the given string to split
+# Returns:
+#   pass_vals = an array containing the split values
+#######################################
+split_line () {
+    IFS="${seperator}" read -ra pass_vals <<< "$1"
+}
+
+#######################################
+# OPTION METHODS
+#######################################
+
+#######################################
+# Display the usage of the script
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+_usage () {
 cat << EOF
-usage: $0 options
+usage: $0 [action] options
 
-Passbox command line password manager utility
+Passbox - command line password manager utility
 
 OPTIONS:
-   -h --help                Display this help
-   -p --password-only       Return the password as a plain text string
+   -h --help                   Display this help
+   -p --password-only          Return the password as a plain text string
+
+ACTIONS
+   get       <entry name>      Get a particular password entry by it's name
+   generate                    Generate a new random password
+   new                         Prompt to create a new passbox entry
+   search    <search pattern>  Search the password database for a particular string, returns the first match
+   update    <entry name>      Update an existing entry in the password database
 EOF
 }
 
-pretty () {
-    perl -0007 -MJSON -ne'print to_json(from_json($_, {allow_nonref=>1}),{pretty=>1})."\n"'
+#######################################
+# Search the password database for a given string and output the result
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+_search () {
+    if [[ $# < 2 ]] ; then
+        fail "Please specify a string to search for"
+    else
+        search "$2" && format_result
+    fi
 }
 
-
-search () {
-    gpg -q -d ~/.pass.gpg |  jsawk "if (this.Name.indexOf('$1') == -1) { return null; }"
+#######################################
+# Generate a random password
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+_gen_pass () {
+    gen_pass
 }
 
-search $1 | pretty | less -g
+#######################################
+# Prompt to create a new entry in the pasword database
+# Globals:
+#
+# Arguments:
+#
+# Returns:
+#
+#######################################
+_new () {
+    new_details &&
+        write_pass
+}
+
+#######################################
+# Update an existing entry in the datbase
+# Globals:
+#
+# Arguments:
+#   2 = the name of the password entry to update
+# Returns:
+#
+#######################################
+_update () {
+    search "^$2|"
+    split_line "${pass_vals_string}"
+    if [[ ${#pass_vals[@]} > 1 ]] ; then
+        new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
+        write_pass
+    else
+        fail "Could not find a password entry for '${2}'"
+    fi
+}
+
+#######################################
+# Get a single entry from the database based on the entries name
+# Globals:
+#
+# Arguments:
+#   2 = the string to search for
+# Returns:
+#
+#######################################
+_get () {
+    if [[ $# < 2 ]] ; then
+        fail "Please specify a string to search for"
+    else
+        search "^$2|" && format_result
+    fi
+}
+
+# MAIN
+check_deps
+
+if [[ $# == 0 ]] ; then
+    _usage
+else
+    case $1 in
+        search)
+            _search $*
+            ;;
+        get)
+            _get $*
+            ;;
+        generate|gen)
+            _gen_pass
+            ;;
+        new)
+            echo "break"
+            _new
+            ;;
+        update)
+            _update $*
+            ;;
+        --help|help)
+            _usage
+            ;;
+        *)
+            _usage
+            ;;
+    esac
+fi

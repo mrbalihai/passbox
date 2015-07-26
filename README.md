@@ -7,6 +7,7 @@
     - GnuPG
     - Bash
 ### USAGE
+````
 usage: passbox [action]
 
 Passbox - command line password manager utility
@@ -17,3 +18,4 @@ ACTIONS
    new                         Prompt to create a new passbox entry
    search    <search pattern>  Search the password database for a particular string, returns the first match
    update    <entry name>      Update an existing entry in the password database
+````

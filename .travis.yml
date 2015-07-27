@@ -1,7 +1,7 @@
-lnguage: bash
-
-before_script:
-        - curl -L "http://downloads.sourceforge.net/shunit2/shunit2-2.0.3.tgz" | tar zx
-
+language: bash
+before_install:
+      - sudo add-apt-repository ppa:duggan/bats --yes
+      - sudo apt-get update -qq
+      - sudo apt-get install -qq bats
 script:
-        - bash tests/runner.sh
+      - bats test/runner.bats

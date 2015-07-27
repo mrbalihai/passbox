@@ -1,8 +1,0 @@
-spawn passbox new
-break
-Name: Test
-Username: Test
-Generate password? (y/n, default: y) n
-Enter password for "Test": ****
-[31mError: Nothing to write
-[m

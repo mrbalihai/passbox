@@ -189,6 +189,8 @@ new_details () {
             get_pass "Enter password for \"${username}\": " ; echo
             if [[ -z ${password} ]] ; then
                 fail "No password provided"
+            else
+                userpass="${password}"
             fi
         fi
     else
@@ -217,7 +219,7 @@ write_pass () {
         new_entry="${passname}${seperator}${username}${seperator}${userpass}"
     fi
 
-    if [[ -z "${password}" ]]; then
+    if [ -z "${password+x}" ]; then
         get_pass "Enter password to unlock ${passbox}: " ; echo
     fi
 
@@ -411,7 +413,6 @@ else
             _gen_pass
             ;;
         new)
-            echo "break"
             _new
             ;;
         update)

@@ -1,4 +1,4 @@
-new_entry () {
+run_new_entry () {
     /usr/bin/expect -d <<EOF
 spawn ./passbox new
 expect "Name: "
@@ -15,13 +15,38 @@ expect eof
 EOF
 }
 
-get_entry () {
+run_get_entry () {
     /usr/bin/expect <<EOF
-spawn ./passbox get $1
+spawn ./passbox get "$1"
 expect "Enter password to unlock $PASSBOX_LOCATION: "
 send "$2\r"
 expect eof
 EOF
+}
+
+run_search_entry () {
+    /usr/bin/expect <<EOF
+spawn ./passbox search \"$1"
+expect "Enter password to unlock $PASSBOX_LOCATION: "
+send "$2\r"
+expect eof
+EOF
+}
+
+run_gen_pass () {
+    /usr/bin/expect <<EOF
+spawn ./passbox gen
+expect "Password length? (default: 20, max: 100)"
+send "$1\r"
+expect eof
+EOF
+}
+
+
+encrypt () {
+    gpg --symmetric --armor --batch --yes \
+        --command-fd 0 --passphrase "$1" \
+        --output $PASSBOX_LOCATION 2>/dev/null
 }
 
 setup () {
@@ -30,7 +55,10 @@ setup () {
 }
 
 teardown () {
-    rm ./test/passbox.gpg
+    if [ -f $PASSBOX_LOCATION ]; then
+        rm ./test/passbox.gpg
+    fi
+
     if [ -z $PREV_PASSBOX_LOCATION ]; then
         export PASSBOX_LOCATION="$PREV_PASSBOX_LOCATION"
     else
@@ -40,8 +68,10 @@ teardown () {
 }
 
 flunk() {
-    { if [ "$#" -eq 0 ]; then cat -
-      else echo "$@"
+    { if [ "$#" -eq 0 ]; then
+        cat -
+      else
+          echo "$@"
       fi
     } >&2
     return 1
@@ -72,9 +102,20 @@ assert_equal() {
 }
 
 assert_contains() {
-    if ![ "$1" == *"$2" ]; then
+    echo "$1" | grep "$2"  1>/dev/null
+    if [ `echo $?` -ne 0 ]; then
         { echo "expected: ${1}"
             echo "actual:   ${2}"
+        } | flunk
+    fi
+}
+
+assert_length () {
+    local p1=$1
+    local p2=$2
+    if [ ${#p1} -ne ${p2} ]; then
+        { echo "expected length: ${p2}"
+            echo "actual length:   ${#p1}"
         } | flunk
     fi
 }
@@ -89,7 +130,7 @@ assert_output() {
 
 assert_line () {
     if [ "$1" -ge 0 ] 2>/dev/null; then
-        assert_equal "|$2|" "|${lines[$1]}|"
+        assert_equal "$2" "${lines[$1]}"
     else
         local line
         for line in "${lines[@]}"; do
@@ -101,13 +142,21 @@ assert_line () {
 
 assert_line_contains () {
     if [ "$1" -ge 0 ] 2>/dev/null; then
-        assert_contains "|$2|" "|${lines[$1]}|"
+        assert_contains "${lines[$1]}" "$2"
     else
         local line
         for line in "${lines[@]}"; do
-            if [ "$line" == *"$1" ]; then return 0; fi
+            if [ "$line" == *"$1"* ]; then return 0; fi
         done
         flunk "expected line \`$1'"
+    fi
+}
+
+assert_line_length () {
+    if [ "$1" -ge 0 ] 2>/dev/null; then
+        assert_length "${lines[$1]}" "$2"
+    else
+        flunk "No line number >1 specified"
     fi
 }
 
@@ -148,8 +197,9 @@ assert_output_contains () {
         return 1
     fi
     echo "$output" | $(type -p ggrep grep | head -1) -F "$expected" >/dev/null || {
-    { echo "expected output to contain $expected"
-        echo "actual: $output"
-    } | flunk
+        { echo "expected output to contain $expected"
+            echo "actual: $output"
+        } | flunk
+    }
 }
-                                        }
+

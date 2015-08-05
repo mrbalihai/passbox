@@ -298,13 +298,9 @@ split_line () {
 #######################################
 _usage () {
 cat << EOF
-usage: $0 [action] options
+usage: $0 [action]
 
 Passbox - command line password manager utility
-
-OPTIONS:
-   -h --help                   Display this help
-   -p --password-only          Return the password as a plain text string
 
 ACTIONS
    get       <entry name>      Get a particular password entry by it's name
@@ -392,7 +388,7 @@ _get () {
     if [[ $# < 2 ]] ; then
         fail "Please specify a string to search for"
     else
-        search "^$2|" && format_result
+        search "^$2\|" && format_result
     fi
 }
 

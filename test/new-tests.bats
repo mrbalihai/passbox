@@ -8,7 +8,7 @@ load test_helper
     local entry_password=Test
     local db_password=Test
 
-    run new_entry $entry_name $entry_username $entry_password $db_password
+    run run_new_entry $entry_name $entry_username $entry_password $db_password
 
     assert_file_exists ./test/passbox.gpg
 }
@@ -19,8 +19,8 @@ load test_helper
     local entry_password=Test
     local db_password=Test
 
-    run new_entry $entry_name $entry_username $entry_password $db_password
-    run get_entry $entry_name $db_password
+    run run_new_entry $entry_name $entry_username $entry_password $db_password
+    run run_get_entry $entry_name $db_password
 
     assert_line_contains 3 "Name:     Test"
     assert_line_contains 4 "Username: Test"

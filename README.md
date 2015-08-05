@@ -1,18 +1,18 @@
 [![Build Status](https://travis-ci.org/RobBollons/passbox.svg)](https://travis-ci.org/RobBollons/passbox)
 
 # PASSBOX
-## Simple command line password manager using bash and GPG - Work in progress
+## A simple command line password manager using bash and GPG - Work in progress
 
-### PREREQS
+### Pre-requisites
     - GnuPG
     - Bash
 
-### INSTALLING
+### Installing
 ````
 curl -L https://raw.githubusercontent.com/RobBollons/passbox/master/passbox > ./passbox && chmod +x ./passbox
 ````
 
-### USAGE
+### Usage
 ````
 usage: passbox [action]
 

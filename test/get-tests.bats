@@ -3,16 +3,24 @@
 load test_helper
 
 @test "get: Gets an entry from the passbox file" {
-    local entry_name=Test Get
-    local entry_username=Test
-    local entry_password=Test
-    local db_password=Testing
+    local db_password="Testing"
 
-    run new_entry $entry_name $entry_username $entry_password $db_password
-    run get_entry $entry_name $db_password
+    echo "Test Get|Test|Test" | encrypt "$db_password"
+    run run_get_entry "Test Get" "$db_password"
 
-    assert_line_contains 3 "Name:     Test"
+    assert_line_contains 3 "Name:     Test Get"
     assert_line_contains 4 "Username: Test"
     assert_line_contains 5 "Password: Test"
 }
 
+@test "get: Displays an error message if no 'entry name' argument is specified" {
+    run run_get_entry ""
+
+    assert_line_contains 1 "Error: Please specify a string to search for"
+}
+
+@test "get: Displays an error message if an entry cannot be found" {
+    run run_get_entry "Test"
+
+    assert_line_contains 1 "Error: No passwords found"
+}

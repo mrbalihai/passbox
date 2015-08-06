@@ -3,15 +3,13 @@
 load test_helper
 
 @test "gen: Generates a 20 character password by default" {
-    run run_gen_pass
+    run bash -c "echo | ./passbox gen"
 
-    #TODO: Extra character possibly from newline
-    assert_line_length 2 21
+    assert_line_length 0 20
 }
 
 @test "gen: Generates a password of a given length" {
-    run run_gen_pass 30
+    run bash -c "echo 30 | ./passbox gen"
 
-    #TODO: Extra character possibly from newline
-    assert_line_length 2 31
+    assert_line_length 0 30
 }

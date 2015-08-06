@@ -3,13 +3,9 @@
 # Script for managing passwords in a symmetrically encrypted file using GnuPG.
 #
 # Copyright (C) 2015 Robert Bollons - All Rights Reserved
-# Permission to copy and modify is granted under the foo license
+# Permission to copy and modify is granted under the MIT license
 # Version 2.0.0
-# Last revised: 26th July 2015
 # Licence: MIT
-#
-# Inspired by an article by Sam Stelfox on using Vim as a password manager: http://stelfox.net/blog/2013/11/using-vim-as-your-password-manager/
-# Heavily based on a similar password manager by drduh: https://github.com/drduh/pwd.sh
 
 set -o errtrace
 set -o nounset
@@ -33,7 +29,7 @@ seperator="|"
 #   The formatted error message
 #######################################
 fail () {
-    tput setaf 1 ; echo "Error: ${1}" ; tput sgr0
+    echo "Error: ${1}" ;
     exit 1
 }
 
@@ -62,34 +58,22 @@ check_deps () {
 #   pass_vals_string = the first line found in the file
 #######################################
 search () {
+    local hasRecords=false
     if [ ! -s ${passbox} ] ; then
         fail "No passwords found"
     else
         get_pass "Enter password to unlock ${passbox}: " ; echo
-        pass_vals_string=$(decrypt "${password}" "${passbox}" | grep -i "$1")
-
-        # TODO: Return multiple results
-        if [[ -z ${pass_vals_string} ]] ; then
+            # Decrypt, grep and iterate over the results without spawning a subshell
+            while IFS= read -r line; do
+                split_line "${line}"
+                if [[ ${#pass_vals[@]} > 1 ]] ; then
+                    echo -e "\nName:     ${pass_vals[0]}\nUsername: ${pass_vals[1]}\nPassword: ${pass_vals[2]}"
+                    hasRecords=true
+                fi
+            done <<<$(decrypt "${password}" "${passbox}" | grep -i "$1")
+        if [ "$hasRecords" == false ]; then
             fail "No entries found"
         fi
-    fi
-}
-
-#######################################
-# Formats the result into a seperate row for each value
-# Globals:
-#   pass_vals_string = A string containing the unformatted password entry
-# Arguments:
-#
-# Returns:
-#   the formatted output
-#######################################
-format_result () {
-    split_line "${pass_vals_string}"
-    if [[ ${#pass_vals[@]} > 1 ]] ; then
-        echo -e "\nName:     ${pass_vals[0]}\nUsername: ${pass_vals[1]}\nPassword: ${pass_vals[2]}"
-    else
-        fail "Invalid entry, this will need manually correcting using an editor"
     fi
 }
 
@@ -237,7 +221,7 @@ write_pass () {
     encrypt "${password}" "${passbox}".new - || fail "Write to passbox failed"
     mv ${passbox}.new ${passbox}
 
-    tput setaf 2 ; echo "Done" ; tput sgr0
+    echo "Done";
 }
 
 #######################################
@@ -321,10 +305,10 @@ EOF
 #
 #######################################
 _search () {
-    if [[ $# < 2 ]] ; then
+    if [[ -z $1 ]] ; then
         fail "Please specify a string to search for"
     else
-        search "$2" && format_result
+        search "$1"
     fi
 }
 
@@ -365,14 +349,16 @@ _new () {
 #
 #######################################
 _update () {
-    search "^$2|"
-    split_line "${pass_vals_string}"
-    if [[ ${#pass_vals[@]} > 1 ]] ; then
-        new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
-        write_pass
-    else
-        fail "Could not find a password entry for '${2}'"
-    fi
+    get_pass "Enter password to unlock ${passbox}: " ; echo
+    while IFS= read -r line; do
+        split_line "${line}"
+        if [[ ${#pass_vals[@]} > 1 ]] ; then
+            new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
+            write_pass
+        else
+            fail "Could not find a password entry for '${2}'"
+        fi
+    done <<<$(decrypt "${password}" "${passbox}" | grep -i "^$1[|]")
 }
 
 #######################################
@@ -385,10 +371,11 @@ _update () {
 #
 #######################################
 _get () {
-    if [[ $# < 2 ]] ; then
+    if [[ -z $1 ]] ; then
         fail "Please specify a string to search for"
     else
-        search "^$2\|" && format_result
+        search "^$1[|]"
+        echo
     fi
 }
 
@@ -400,10 +387,10 @@ if [[ $# == 0 ]] ; then
 else
     case $1 in
         search)
-            _search $*
+            _search "$2"
             ;;
         get)
-            _get $*
+            _get "$2"
             ;;
         generate|gen)
             _gen_pass
@@ -412,7 +399,7 @@ else
             _new
             ;;
         update)
-            _update $*
+            _update "$2"
             ;;
         --help|help)
             _usage

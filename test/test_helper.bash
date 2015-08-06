@@ -1,52 +1,13 @@
-run_new_entry () {
-    /usr/bin/expect -d <<EOF
-spawn ./passbox new
-expect "Name: "
-send -- "$1\r"
-expect "Username: "
-send -- "$2\r"
-expect "Generate password? (y/n, default: y) "
-send -- "n\r"
-expect "Enter password for \"$2\": "
-send "$3\r"
-expect "Enter password to unlock $PASSBOX_LOCATION: "
-send "$4\r"
-expect eof
-EOF
-}
-
-run_get_entry () {
-    /usr/bin/expect <<EOF
-spawn ./passbox get "$1"
-expect "Enter password to unlock $PASSBOX_LOCATION: "
-send "$2\r"
-expect eof
-EOF
-}
-
-run_search_entry () {
-    /usr/bin/expect <<EOF
-spawn ./passbox search \"$1"
-expect "Enter password to unlock $PASSBOX_LOCATION: "
-send "$2\r"
-expect eof
-EOF
-}
-
-run_gen_pass () {
-    /usr/bin/expect <<EOF
-spawn ./passbox gen
-expect "Password length? (default: 20, max: 100)"
-send "$1\r"
-expect eof
-EOF
-}
-
-
 encrypt () {
     gpg --symmetric --armor --batch --yes \
         --command-fd 0 --passphrase "$1" \
         --output $PASSBOX_LOCATION 2>/dev/null
+}
+
+decrypt () {
+    gpg \
+        --decrypt --armor --batch \
+        --command-fd 0 --passphrase "${1}" "${2}" 2>/dev/null
 }
 
 setup () {
@@ -95,15 +56,6 @@ assert_failure() {
 
 assert_equal() {
     if [ "$1" != "$2" ]; then
-        { echo "expected: ${1}"
-            echo "actual:   ${2}"
-        } | flunk
-    fi
-}
-
-assert_contains() {
-    echo "$1" | grep "$2"  1>/dev/null
-    if [ `echo $?` -ne 0 ]; then
         { echo "expected: ${1}"
             echo "actual:   ${2}"
         } | flunk
@@ -189,17 +141,3 @@ assert_file_exists () {
         } | flunk
     fi
 }
-
-assert_output_contains () {
-    local expected="$1"
-    if [ -z "$expected" ]; then
-        echo "assert_output_contains needs an argument" >&2
-        return 1
-    fi
-    echo "$output" | $(type -p ggrep grep | head -1) -F "$expected" >/dev/null || {
-        { echo "expected output to contain $expected"
-            echo "actual: $output"
-        } | flunk
-    }
-}
-

@@ -8,7 +8,11 @@ load test_helper
     local entry_password=Test
     local db_password=Test
 
-    run run_new_entry $entry_name $entry_username $entry_password $db_password
+    run bash -c "( echo $entry_name;
+                   echo $entry_username;
+                   echo n;
+                   echo $entry_pasword;
+                   echo $db_password; ) | ./passbox new"
 
     assert_file_exists ./test/passbox.gpg
 }
@@ -19,11 +23,14 @@ load test_helper
     local entry_password=Test
     local db_password=Test
 
-    run run_new_entry $entry_name $entry_username $entry_password $db_password
-    run run_get_entry $entry_name $db_password
+    ( echo "$entry_name";
+      echo "$entry_username";
+      echo "n";
+      echo "$entry_password";
+      echo "$db_password"; ) | ./passbox new >/dev/null
 
-    assert_line_contains 3 "Name:     Test"
-    assert_line_contains 4 "Username: Test"
-    assert_line_contains 5 "Password: Test"
+    run decrypt "$db_password" "$PASSBOX_LOCATION"
+
+    assert_line 0 "$entry_name|$entry_username|$entry_password"
 }
 

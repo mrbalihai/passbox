@@ -1,10 +1,11 @@
 [![Build Status](https://travis-ci.org/RobBollons/passbox.svg)](https://travis-ci.org/RobBollons/passbox)
 
 # PASSBOX
-## A simple command line password manager using bash and GPG - Work in progress
+## A simple command line password manager using bash and GPG
 
 ### Pre-requisites
     - GnuPG
+    - Grep
     - Bash
 
 ### Installing
@@ -13,12 +14,14 @@ curl -L https://raw.githubusercontent.com/RobBollons/passbox/master/passbox > ./
 ````
 
 ### Usage
+
 ````
 usage: passbox [action]
 
 Passbox - command line password manager utility
 
 ACTIONS
+   delete    <entry name>      Remove an entry from the password database
    get       <entry name>      Get a particular password entry by it's name
    generate                    Generate a new random password
    new                         Prompt to create a new passbox entry

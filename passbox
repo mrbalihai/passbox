@@ -109,9 +109,9 @@ gen_pass () {
 #   the decrypted file contents
 #######################################
 decrypt () {
-    ${gpg} \
+    echo "${1}" | ${gpg} \
         --decrypt --armor --batch \
-        --command-fd 0 --passphrase "${1}" "${2}" 2>/dev/null
+        --passphrase-fd 0 "${2}" 2>/dev/null
 }
 
 #######################################
@@ -126,10 +126,10 @@ decrypt () {
 #   the decrypted file contents
 #######################################
 encrypt () {
-    ${gpg} \
-        --symmetric --armor --batch --yes \
-        --command-fd 0 --passphrase "${1}" \
-        --output "${2}" "${3}" 2>/dev/null
+  ${gpg} \
+      --symmetric --armor --batch --yes \
+      --passphrase-fd 3 \
+      --output "${2}" "${3}" 3< <(echo "${1}")
 }
 
 
@@ -155,7 +155,7 @@ new_details () {
 
     if [[ $# > 1 ]] ; then
         read -p "Username (${2}): " username
-        if [[ -z"${username}" ]]; then
+        if [[ -z "${username}" ]]; then
             username="${2}"
         fi
     else
@@ -166,8 +166,10 @@ new_details () {
     if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
         if [[ $# > 1 ]] ; then
             get_pass "Enter password for \"${username}\" (${3}): " ; echo
-            if [[ -z "${password}" ]]; then
-                userpass=${3}
+            if [[ -z ${password} ]] ; then
+                userpass="${3}"
+            else
+                userpass="$password"
             fi
         else
             get_pass "Enter password for \"${username}\": " ; echo
@@ -197,29 +199,23 @@ new_details () {
 #
 #######################################
 write_pass () {
+    local gpgpass=$password
     if [ -z ${userpass+x} ] ; then
-        fail "Nothing to write"
+        new_entry=""
     else
         new_entry="${passname}${seperator}${username}${seperator}${userpass}"
     fi
 
-    if [ -z "${password+x}" ]; then
+    if [ -z "${gpgpass+x}" ]; then
         get_pass "Enter password to unlock ${passbox}: " ; echo
+        gpgpass=$password
     fi
 
-    # If passbox exists, decrypt it and filter out username, or bail on error.
-    # If successful, append new entry, or blank line.
-    # Filter out any blank lines.
-    # Finally, encrypt it all to a new safe file, or fail.
-    # If successful, update to new passbox file.
-    ( if [ -f ${passbox} ] ; then
-        decrypt "${password}" "${passbox}" | \
-        grep -v -e "^${username}|" || return
-        fi ; \
-        echo "${new_entry}" ) | \
-    grep -v -e "^[[:space:]]*$" | \
-    encrypt "${password}" "${passbox}".new - || fail "Write to passbox failed"
-    mv ${passbox}.new ${passbox}
+    ( if [ -f ${passbox} ]; then
+          decrypt "${password}" "${passbox}" | grep -v -e "^${passname}[${seperator}]" # || return
+      fi;
+      echo "${new_entry}"
+    ) | grep -v -e "^[[:space:]]*$" | encrypt "${gpgpass}" "${passbox}" - # || fail "Write failed"
 
     echo "Done";
 }
@@ -336,6 +332,7 @@ _gen_pass () {
 #######################################
 _new () {
     new_details &&
+        get_pass "Enter password to unlock ${passbox}: " ; echo &&
         write_pass
 }
 
@@ -349,16 +346,24 @@ _new () {
 #
 #######################################
 _update () {
+    local gpgpass=""
+
+    if [[ -z $1 ]] ; then
+        fail "Please specify the name of an entry to edit"
+    fi
+
     get_pass "Enter password to unlock ${passbox}: " ; echo
-    while IFS= read -r line; do
-        split_line "${line}"
-        if [[ ${#pass_vals[@]} > 1 ]] ; then
-            new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
+    gpgpass=${password}
+
+    details=$(decrypt "${password}" "${passbox}" | grep -i "^$1[${seperator}]")
+    split_line "${details}"
+    if [[ ${#pass_vals[@]} > 1 ]] ; then
+        new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
+            password=$gpgpass &&
             write_pass
-        else
-            fail "Could not find a password entry for '${2}'"
-        fi
-    done <<<$(decrypt "${password}" "${passbox}" | grep -i "^$1[|]")
+    else
+        fail "Could not find a password entry for '${1}'"
+    fi
 }
 
 #######################################
@@ -372,10 +377,40 @@ _update () {
 #######################################
 _get () {
     if [[ -z $1 ]] ; then
-        fail "Please specify a string to search for"
+        fail "Please specify the name of an entry to get"
     else
-        search "^$1[|]"
+        search "^$1[${seperator}]"
         echo
+    fi
+}
+
+#######################################
+# Deletes an entry from the database based on the entries name
+# Globals:
+#
+# Arguments:
+#   2 = the name of the entry to delete
+# Returns:
+#
+#######################################
+_delete () {
+    local gpgpass=""
+
+    if [[ -z $1 ]] ; then
+        fail "Please specify the name of an entry to delete"
+    fi
+    get_pass "Enter password to unlock ${passbox}: " ; echo
+    gpgpass=${password}
+
+    details=$(decrypt "${password}" "${passbox}" | grep -i "^$1[${seperator}]")
+    split_line "${details}"
+    if [[ ${#pass_vals[@]} > 1 ]] ; then
+        passname=${pass_vals[0]} &&
+            password=$gpgpass &&
+            write_pass
+        echo "${passname}"
+    else
+        fail "Could not find a password entry for '${1}'"
     fi
 }
 
@@ -400,6 +435,9 @@ else
             ;;
         update)
             _update "$2"
+            ;;
+        delete)
+            _delete "$2"
             ;;
         --help|help)
             _usage

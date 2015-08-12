@@ -16,7 +16,7 @@ load test_helper
 @test "get: Displays an error message if no 'entry name' argument is specified" {
     run ./passbox get ""
 
-    assert_line 0 "Error: Please specify a string to search for"
+    assert_line 0 "Error: Please specify the name of an entry to get"
 }
 
 @test "get: Displays an error message if an entry cannot be found" {

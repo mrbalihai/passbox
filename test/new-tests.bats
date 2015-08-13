@@ -3,10 +3,10 @@
 load test_helper
 
 @test "new: Creates a new passbox file if it doesn't exist" {
-    local entry_name=Test
-    local entry_username=Test
-    local entry_password=Test
-    local db_password=Test
+    local entry_name="Entry 1"
+    local entry_username="entry1@test.com"
+    local entry_password="pass1234"
+    local db_password="password 12345"
 
     run bash -c "( echo $entry_name;
                    echo $entry_username;
@@ -18,10 +18,10 @@ load test_helper
 }
 
 @test "new: Creates a new entry in the passbox file" {
-    local entry_name=Test
-    local entry_username=Test
-    local entry_password=Test
-    local db_password=Test
+    local entry_name="Entry 1"
+    local entry_username="entry1@test.com"
+    local entry_password="pass1234"
+    local db_password="password 12345"
 
     ( echo "$entry_name";
       echo "$entry_username";

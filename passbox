@@ -59,18 +59,18 @@ check_deps () {
 #######################################
 search () {
     local hasRecords=false
-    if [ ! -s ${passbox} ] ; then
+    if [ ! -s "${passbox}" ] ; then
         fail "No passwords found"
     else
         get_pass "Enter password to unlock ${passbox}: " ; echo
-            # Decrypt, grep and iterate over the results without spawning a subshell
-            while IFS= read -r line; do
+            while read -r line; do
+                unset pass_vals
                 split_line "${line}"
-                if [[ ${#pass_vals[@]} > 1 ]] ; then
+                if [[ ${#pass_vals[@]} -gt 1 ]] ; then
                     echo -e "\nName:     ${pass_vals[0]}\nUsername: ${pass_vals[1]}\nPassword: ${pass_vals[2]}"
                     hasRecords=true
                 fi
-            done <<<$(decrypt "${password}" "${passbox}" | grep -i "$1")
+            done < <(decrypt "${password}" "${passbox}" | grep -i "$1")
         if [ "$hasRecords" == false ]; then
             fail "No entries found"
         fi
@@ -95,7 +95,7 @@ gen_pass () {
     fi
 
     # base64: 4 characters for every 3 bytes
-    ${gpg} --gen-random -a 0 "$((${max} * 3/4))" | cut -c -${len}
+    ${gpg} --gen-random -a 0 "$((max * 3/4))" | cut -c -"${len}"
 }
 
 #######################################
@@ -147,13 +147,13 @@ encrypt () {
 #   userpass = password of the password entry
 #######################################
 new_details () {
-    if [[ $# > 0 ]] ; then
+    if [[ $# -gt 0 ]] ; then
         passname="$1"
     else
         read -p "Name: " passname
     fi
 
-    if [[ $# > 1 ]] ; then
+    if [[ $# -gt 1 ]] ; then
         read -p "Username (${2}): " username
         if [[ -z "${username}" ]]; then
             username="${2}"
@@ -164,7 +164,7 @@ new_details () {
 
     read -p "Generate password? (y/n, default: y) " rand_pass
     if [[ "${rand_pass}" =~ ^([nN][oO]|[nN])$ ]]; then
-        if [[ $# > 1 ]] ; then
+        if [[ $# -gt 1 ]] ; then
             get_pass "Enter password for \"${username}\" (${3}): " ; echo
             if [[ -z ${password} ]] ; then
                 userpass="${3}"
@@ -200,7 +200,7 @@ new_details () {
 #######################################
 write_pass () {
     local gpgpass=$password
-    if [ -z ${userpass+x} ] ; then
+    if [ -z "${userpass+x}" ] ; then
         new_entry=""
     else
         new_entry="${passname}${seperator}${username}${seperator}${userpass}"
@@ -211,7 +211,7 @@ write_pass () {
         gpgpass=$password
     fi
 
-    ( if [ -f ${passbox} ]; then
+    ( if [ -f "${passbox}" ]; then
           decrypt "${password}" "${passbox}" | grep -v -e "^${passname}[${seperator}]" # || return
       fi;
       echo "${new_entry}"
@@ -260,7 +260,9 @@ get_pass () {
 #   pass_vals = an array containing the split values
 #######################################
 split_line () {
+    oldIFS=IFS
     IFS="${seperator}" read -ra pass_vals <<< "$1"
+    IFS=$oldIFS
 }
 
 #######################################
@@ -285,7 +287,7 @@ Passbox - command line password manager utility
 ACTIONS
    get       <entry name>      Get a particular password entry by it's name
    generate                    Generate a new random password
-   new                         Prompt to create a new passbox entry
+   new|add                     Prompt to create a new password entry
    search    <search pattern>  Search the password database for a particular string, returns the first match
    update    <entry name>      Update an existing entry in the password database
 EOF
@@ -301,11 +303,7 @@ EOF
 #
 #######################################
 _search () {
-    if [[ -z $1 ]] ; then
-        fail "Please specify a string to search for"
-    else
-        search "$1"
-    fi
+    search "$1"
 }
 
 #######################################
@@ -348,16 +346,12 @@ _new () {
 _update () {
     local gpgpass=""
 
-    if [[ -z $1 ]] ; then
-        fail "Please specify the name of an entry to edit"
-    fi
-
     get_pass "Enter password to unlock ${passbox}: " ; echo
     gpgpass=${password}
 
     details=$(decrypt "${password}" "${passbox}" | grep -i "^$1[${seperator}]")
     split_line "${details}"
-    if [[ ${#pass_vals[@]} > 1 ]] ; then
+    if [[ ${#pass_vals[@]} -gt 1 ]] ; then
         new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
             password=$gpgpass &&
             write_pass
@@ -376,12 +370,8 @@ _update () {
 #
 #######################################
 _get () {
-    if [[ -z $1 ]] ; then
-        fail "Please specify the name of an entry to get"
-    else
-        search "^$1[${seperator}]"
-        echo
-    fi
+    search "^$1[${seperator}]"
+    echo
 }
 
 #######################################
@@ -396,22 +386,21 @@ _get () {
 _delete () {
     local gpgpass=""
 
-    if [[ -z $1 ]] ; then
-        fail "Please specify the name of an entry to delete"
-    fi
+
     get_pass "Enter password to unlock ${passbox}: " ; echo
     gpgpass=${password}
 
     details=$(decrypt "${password}" "${passbox}" | grep -i "^$1[${seperator}]")
     split_line "${details}"
-    if [[ ${#pass_vals[@]} > 1 ]] ; then
-        passname=${pass_vals[0]} &&
-            password=$gpgpass &&
-            write_pass
-        echo "${passname}"
-    else
+
+    if [[ ${#pass_vals[@]} == 0 ]] ; then
         fail "Could not find a password entry for '${1}'"
     fi
+
+    passname=${pass_vals[0]} &&
+        password=$gpgpass &&
+        write_pass
+    echo "${passname}"
 }
 
 # MAIN
@@ -422,9 +411,15 @@ if [[ $# == 0 ]] ; then
 else
     case $1 in
         search)
+            if ! [ -n "${2+1}" ] ; then
+                fail "Please specify a string to search for"
+            fi
             _search "$2"
             ;;
         get)
+            if ! [ -n "${2+1}" ] ; then
+                fail "Please specify the name of an entry to get"
+            fi
             _get "$2"
             ;;
         generate|gen)
@@ -434,9 +429,15 @@ else
             _new
             ;;
         update)
+            if ! [ -n "${2+1}" ] ; then
+                fail "Please specify the name of an entry to update"
+            fi
             _update "$2"
             ;;
         delete)
+            if ! [ -n "${2+1}" ] ; then
+                fail "Please specify the name of an entry to delete"
+            fi
             _delete "$2"
             ;;
         --help|help)

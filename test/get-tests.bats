@@ -10,9 +10,24 @@ load test_helper
 
     run bash -c "echo \"$db_password\" | ./passbox get \"Entry 2\""
 
-    assert_line 0 "Name:     Entry 2"
+    assert_line 0 "Name: Entry 2"
     assert_line 1 "Username: entry2@test.com"
     assert_line 2 "Password: 1234pass"
+}
+
+@test "get: Can return additional fields" {
+    local db_password="password 12345"
+
+    ( echo "Entry 1|entry1@test.com|pass1234";
+      echo "Entry 2|entry2@test.com|1234pass|Field 1:Field 1 value|Field 2:Field 2 value" ) | encrypt "$db_password"
+
+    run bash -c "echo \"$db_password\" | ./passbox get \"Entry 2\""
+
+    assert_line 0 "Name: Entry 2"
+    assert_line 1 "Username: entry2@test.com"
+    assert_line 2 "Password: 1234pass"
+    assert_line 3 "Field 1: Field 1 value"
+    assert_line 4 "Field 2: Field 2 value"
 }
 
 @test "get: Displays an error message if no 'entry name' argument is specified" {

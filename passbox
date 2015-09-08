@@ -11,9 +11,10 @@ set -o errtrace
 set -o nounset
 set -o pipefail
 
-gpg=$(which gpg)
-passbox=${PASSBOX_LOCATION:=~/pass-test.gpg}
-seperator="|"
+# Defaults
+PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
+GPG=gpg
+SEPERATOR="|"
 
 #######################################
 # HELPERS
@@ -33,7 +34,7 @@ fail () {
 # Make sure required programs are installed and can be executed.
 #######################################
 check_deps () {
-    if [[ -z ${gpg} && ! -x ${gpg} ]] ; then
+    if [[ -z ${GPG} && ! -x ${GPG} ]] ; then
       fail "GnuPG is not available"
     fi
 }
@@ -43,14 +44,17 @@ check_deps () {
 #######################################
 search () {
     local hasRecords=false
-    if [ ! -s "${passbox}" ] ; then
+    if [ ! -s "${PASSBOX}" ] ; then
         fail "No passwords found"
     fi
-    get_pass "Enter password to unlock ${passbox}: " ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     while read -r line; do
         split_line "${line}"
         if [[ ${#pass_vals[@]} -gt 0 ]] ; then
-            echo -e "\nName: ${pass_vals[0]}\nUsername: ${pass_vals[1]}\nPassword: ${pass_vals[2]}"
+            echo
+            echo "Name: ${pass_vals[0]}"
+            echo "Username: ${pass_vals[1]}"
+            echo "Password: ${pass_vals[2]}"
 
             # If there are >2 items in the array then there must be extra values
             if [[ ${#pass_vals[@]} -gt 2 ]] ; then
@@ -60,8 +64,8 @@ search () {
                     if [[ $i -gt 2 ]]; then
 
                         # Split the additional values and echo them out
-                        get_extra_val "${pass_vals[i]}"
-                        echo -e "${extra_val[0]}: ${extra_val[1]}"
+                        split_extra_val "${pass_vals[i]}"
+                        echo "${extra_val[0]}: ${extra_val[1]}"
                     fi
                 done
             fi
@@ -85,26 +89,26 @@ gen_pass () {
     fi
 
     # base64: 4 characters for every 3 bytes
-    ${gpg} --gen-random -a 0 "$((max * 3/4))" | cut -c -"${len}"
+    ${GPG} --gen-random -a 0 "$((max * 3/4))" | cut -c -"${len}"
 }
 
 #######################################
 # Decrypt the password file with a given password
 #######################################
 decrypt () {
-    echo "${1}" | ${gpg} \
+    echo "${1}" | ${GPG} \
         --decrypt --armor --batch \
-        --passphrase-fd 0 "${passbox}" 2>/dev/null
+        --passphrase-fd 0 "${PASSBOX}" 2>/dev/null
 }
 
 #######################################
 #  Encrypt the file contents
 #######################################
 encrypt () {
-    ${gpg} \
+    ${GPG} \
         --symmetric --armor --batch --yes \
         --passphrase-fd 3 \
-        --output "${passbox}" "${2}" 3< <(echo "${1}")
+        --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
 }
 
 #######################################
@@ -113,7 +117,7 @@ encrypt () {
 strip_entry () {
     local input="${1}"
     local passname="${2}"
-    echo "${input}" | grep -v -e "^${passname}[${seperator}]"
+    echo "${input}" | grep -v -e "^${passname}[${SEPERATOR}]"
 }
 
 #######################################
@@ -188,11 +192,11 @@ write_pass () {
     if [ -z "${userpass+x}" ] ; then
         new_entry_string=""
     else
-        new_entry_string="${passname}${seperator}${username}${seperator}${userpass}"
+        new_entry_string="${passname}${SEPERATOR}${username}${SEPERATOR}${userpass}"
     fi
 
     if [ -z "${gpgpass+x}" ]; then
-        get_pass "Enter password to unlock ${passbox}: " ; echo
+        get_pass "Enter password to unlock ${PASSBOX}: " ; echo
         gpgpass=$password
     fi
 
@@ -232,16 +236,41 @@ get_pass () {
 # Splits a line based on the given seperator into an array
 #######################################
 split_line () {
-    oldIFS=IFS
-    IFS="${seperator}" read -ra pass_vals <<< "$1"
+    local oldIFS=IFS
+    IFS="${SEPERATOR}" read -ra pass_vals <<< "$1"
     IFS=$oldIFS
 }
 
-
-get_extra_val () {
-    oldIFS=IFS
+#######################################
+# Splits a line based on a colon into an array
+#######################################
+split_extra_val () {
+    local oldIFS=IFS
     IFS=":" read -ra extra_val <<< "$1"
     IFS=$oldIFS
+}
+
+#######################################
+# Gets an individual extra val key value pair from a line
+#######################################
+get_extra_val () {
+    local line="$1"
+
+    split_line "${line}"
+    if [[ ${#pass_vals[@]} -gt 2 ]] ; then
+        for i in "${!pass_vals[@]}"
+        do
+            # TODO: There could be a better way to do this e.g. start the loop at 2
+            if [[ $i -gt 2 ]]; then
+
+                # Split the additional values and echo them out
+                split_extra_val "${pass_vals[i]}"
+                if [[ "$2" = "${extra_val[0]}" ]]; then
+                    break
+                fi
+            fi
+        done
+    fi
 }
 
 #######################################
@@ -286,7 +315,8 @@ _gen_pass () {
 #######################################
 _new () {
     new_details &&
-        get_pass "Enter password to unlock ${passbox}: " ; echo &&
+        get_pass "Enter password to unlock ${PASSBOX}: " ;
+        echo &&
         write_pass
 }
 
@@ -296,10 +326,10 @@ _new () {
 _update () {
     local gpgpass=""
 
-    get_pass "Enter password to unlock ${passbox}: " ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
 
-    details=$(decrypt "${password}" | grep -i "^$1[${seperator}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
     if [[ ${#pass_vals[@]} -gt 1 ]] ; then
         new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
@@ -314,7 +344,7 @@ _update () {
 # Get a single entry from the database based on the entries name
 #######################################
 _get () {
-    search "^$1[${seperator}]"
+    search "^$1[${SEPERATOR}]"
     echo
 }
 
@@ -324,15 +354,20 @@ _get () {
 _delete () {
     local gpgpass=""
 
-
-    get_pass "Enter password to unlock ${passbox}: " ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
 
-    details=$(decrypt "${password}" | grep -i "^$1[${seperator}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
 
     if [[ ${#pass_vals[@]} == 0 ]] ; then
         fail "Could not find a password entry for '${1}'"
+    fi
+
+    read -p "Are you sure you want to delete the entry for '${pass_vals[0]}'? (y/n, default: n) " confirm_delete
+    if [[ "${confirm_delete}" =~ ^([nN][oO]|[nN])$ ]]; then
+        echo "Delete aborted"
+        return 1
     fi
 
     passname=${pass_vals[0]} &&
@@ -348,25 +383,53 @@ _delete () {
 _add_field () {
     local gpgpass=""
 
-    get_pass "Enter password to unlock ${passbox}: " ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
 
-    details=$(decrypt "${password}" | grep -i "^$1[${seperator}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
-    if [[ ${#pass_vals[@]} -gt 1 ]]; then
-        passname="${pass_vals[0]}"
-        password=$gpgpass
-        read -p "Field Name: " field_name
-        read -p "Field Value: " field_value
-        new_entry_string="${details}${seperator}${field_name}:${field_value}"
-
-        local result=$(decrypt "${password}")
-        result=$(strip_entry "${result}" "${passname}")
-        result=$(append_entry "${result}" "${new_entry_string}")
-        write_entries "${result}"
-    else
+    if [[ ${#pass_vals[@]} -lt 2 ]]; then
         fail "Could not find a password entry for '${1}'"
     fi
+
+    passname="${pass_vals[0]}"
+    password=$gpgpass
+    read -p "Field Name: " field_name
+    read -p "Field Value: " field_value
+    new_entry_string="${details}${SEPERATOR}${field_name}:${field_value}"
+
+    local result=$(decrypt "${password}")
+    result=$(strip_entry "${result}" "${passname}")
+    result=$(append_entry "${result}" "${new_entry_string}")
+    write_entries "${result}"
+}
+
+#######################################
+# Removes an additional field to an existing password entry
+#######################################
+_remove_field () {
+    local gpgpass=""
+
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
+    gpgpass=${password}
+
+    details=$(decrypt "${password}" | grep -i "^${1}[${SEPERATOR}]")
+    split_line "${details}"
+    if [[ ${#pass_vals[@]} -lt 1 ]]; then
+        fail "Could not find a password entry for '${1}'"
+    fi
+
+    passname="${pass_vals[0]}"
+    password=$gpgpass
+
+    get_extra_val "$details" "$2"
+    field_to_remove="|${extra_val[0]}:${extra_val[1]}"
+    new_entry_string="${details/${field_to_remove}/}"
+
+    local result=$(decrypt "${password}")
+    result=$(strip_entry "${result}" "${passname}")
+    result=$(append_entry "${result}" "${new_entry_string}")
+    write_entries "${result}"
 }
 
 # MAIN
@@ -411,6 +474,15 @@ else
                 fail "Please specify the name of an entry to add a field to"
             fi
             _add_field "$2"
+            ;;
+        remove-field)
+            if ! [ -n "${2+1}" ] ; then
+                fail "Please specify the name of an entry to remove a field from"
+            fi
+            if ! [ -n "${3+1}" ] ; then
+                fail "Please specify the name of a field to remove"
+            fi
+            _remove_field "$2" "$3"
             ;;
         --help|help)
             _usage

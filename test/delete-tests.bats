@@ -8,7 +8,8 @@ load test_helper
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"
 
-    echo "$db_password" | ./passbox delete "Entry 2" >/dev/null
+    ( echo "$db_password";
+      echo "y" ) | ./passbox delete "Entry 2" >/dev/null
 
     run decrypt "$db_password" "$PASSBOX_LOCATION"
 

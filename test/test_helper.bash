@@ -11,20 +11,15 @@ decrypt () {
 }
 
 setup () {
+
+    # Don't screw up env variables if ran locally
     PREV_PASSBOX_LOCATION="$PASSBOX_LOCATION"
     export PASSBOX_LOCATION="./test/passbox.gpg"
 }
 
 teardown () {
-    if [ -f $PASSBOX_LOCATION ]; then
-        rm ./test/passbox.gpg
-    fi
-
-    if [ -z $PREV_PASSBOX_LOCATION ]; then
-        export PASSBOX_LOCATION="$PREV_PASSBOX_LOCATION"
-    else
-        unset PASSBOX_LOCATION
-    fi
+    PASSBOX_LOCATION="$PREV_PASSBOX_LOCATION"
+    rm ./test/passbox.gpg
     unset PREV_PASSBOX_LOCATION
 }
 

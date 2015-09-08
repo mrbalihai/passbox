@@ -284,13 +284,14 @@ usage: $0 [action]
 
 Passbox - command line password manager utility
 
+ACTIONS
    add-field     <entry name>               Update an existing entry to add additional fields to
    delete        <entry name>               Remove an entry from the password database
    get           <entry name>               Get a particular password entry by it's name
    generate                                 Generate a new random password
    new                                      Prompt to create a new passbox entry
    remove-field  <entry name> <field name>  Update an existing entry to remove additional fields
-   search        <search pattern>           Search the password database for a particular string, returns the first match
+   search        <search pattern>           Search the password database for a particular string, returns all matchin entries
    update        <entry name>               Update an existing entry in the password database
 EOF
 }

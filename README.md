@@ -35,7 +35,7 @@ ACTIONS
    generate                                 Generate a new random password
    new                                      Prompt to create a new passbox entry
    remove-field  <entry name> <field name>  Update an existing entry to remove additional fields
-   search        <search pattern>           Search the password database for a particular string, returns the first match
+   search        <search pattern>           Search the password database for a particular string, returns all matchin entries
    update        <entry name>               Update an existing entry in the password database
 ````
 

@@ -19,6 +19,7 @@
 ### Installing
 ````
 curl -L https://raw.githubusercontent.com/RobBollons/passbox/master/passbox > ./passbox && chmod +x ./passbox
+chmod +x ./passbox
 ````
 
 ### Usage
@@ -28,14 +29,14 @@ usage: passbox [action]
 Passbox - command line password manager utility
 
 ACTIONS
-   add-field     <entry name>      Update an existing entry to add additional fields to
-   delete        <entry name>      Remove an entry from the password database
-   get           <entry name>      Get a particular password entry by it's name
-   generate                        Generate a new random password
-   new                             Prompt to create a new passbox entry
-   remove-field  <entry name>      Update an existing entry to remove additional fields
-   search        <search pattern>  Search the password database for a particular string, returns the first match
-   update        <entry name>      Update an existing entry in the password database
+   add-field     <entry name>               Update an existing entry to add additional fields to
+   delete        <entry name>               Remove an entry from the password database
+   get           <entry name>               Get a particular password entry by it's name
+   generate                                 Generate a new random password
+   new                                      Prompt to create a new passbox entry
+   remove-field  <entry name> <field name>  Update an existing entry to remove additional fields
+   search        <search pattern>           Search the password database for a particular string, returns the first match
+   update        <entry name>               Update an existing entry in the password database
 ````
 
 The default location of the passbox file is '~/passbox.gpg' however this can be overridden using the PASSBOX_LOCATION env variable. So for example you could put this in your .bashrc:
@@ -45,6 +46,7 @@ export PASSBOX_LOCATION='~/dropbox/passwords.gpg'
 
 ### Tests
 Tests are ran locally against the 'test/' directory using [bats](https://github.com/sstephenson/bats) e.g. `bats test/`
+
 **WARNING:** The tests will temporarily override the 'PASSBOX_LOCATION' env variable before each test but will restore it again after
 
 ### Similar Projects

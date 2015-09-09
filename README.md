@@ -2,7 +2,7 @@
 
 # PASSBOX
 ## A simple command line password manager using bash and GPG
-
+High test coverage with minimal dependencies.
 
 ### Features
 - [x] Search/Add/Update/Delete password entries
@@ -19,7 +19,6 @@
 ### Installing
 ````
 curl -L https://raw.githubusercontent.com/RobBollons/passbox/master/passbox > ./passbox && chmod +x ./passbox
-chmod +x ./passbox
 ````
 
 ### Usage

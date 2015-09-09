@@ -4,6 +4,8 @@
 ## A simple command line password manager using bash and GPG
 High test coverage with minimal dependencies.
 
+Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please check that project out as it might suit your needs better.
+
 ### Features
 - [x] Search/Add/Update/Delete password entries
 - [x] Generate random passwords

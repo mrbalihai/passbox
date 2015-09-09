@@ -52,3 +52,4 @@ Tests are ran locally against the 'test/' directory using [bats](https://github.
 
 ### Similar Projects
 [drudh/pwd.sh](https://github.com/drduh/pwd.sh) - Script to manage passwords in an encrypted file using gpg
+[pass](http://www.passwordstore.org/) - Standard UNIX password manager

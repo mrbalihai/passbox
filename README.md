@@ -51,5 +51,5 @@ Tests are ran locally against the 'test/' directory using [bats](https://github.
 **WARNING:** The tests will temporarily override the 'PASSBOX_LOCATION' env variable before each test but will restore it again after
 
 ### Similar Projects
-[drudh/pwd.sh](https://github.com/drduh/pwd.sh) - Script to manage passwords in an encrypted file using gpg
-[pass](http://www.passwordstore.org/) - Standard UNIX password manager
+- [drudh/pwd.sh](https://github.com/drduh/pwd.sh) - Script to manage passwords in an encrypted file using gpg
+- [pass](http://www.passwordstore.org/) - Standard UNIX password manager

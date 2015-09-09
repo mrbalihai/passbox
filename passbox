@@ -79,6 +79,7 @@ search () {
 
 #######################################
 # Generate a random password using GPG
+# Based on https://github.com/drduh/pwd.sh
 #######################################
 gen_pass () {
     len=20
@@ -208,6 +209,7 @@ write_pass () {
 
 #######################################
 # Prompts for a password, hiding the contents with stars
+# Based on https://github.com/drduh/pwd.sh
 #######################################
 get_pass () {
     local prompt="${1}"

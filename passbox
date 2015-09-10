@@ -190,10 +190,11 @@ new_details () {
 #######################################
 write_pass () {
     local gpgpass=$password
+    local addlfields=${1:-}
     if [ -z "${userpass+x}" ] ; then
         new_entry_string=""
     else
-        new_entry_string="${passname}${SEPERATOR}${username}${SEPERATOR}${userpass}"
+        new_entry_string="${passname}${SEPERATOR}${username}${SEPERATOR}${userpass}${addlfields}"
     fi
 
     if [ -z "${gpgpass+x}" ]; then
@@ -327,16 +328,22 @@ _new () {
 #######################################
 _update () {
     local gpgpass=""
+    local addlfields=""
 
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
 
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
+    for i in "${!pass_vals[@]}"; do
+        if [[ $i -gt 2 ]]; then
+            addlfields="$addlfields$SEPERATOR${pass_vals[i]}"
+        fi
+    done
     if [[ ${#pass_vals[@]} -gt 1 ]] ; then
         new_details "${pass_vals[0]}" "${pass_vals[1]}" "${pass_vals[2]}" &&
             password=$gpgpass &&
-            write_pass
+            write_pass "$addlfields"
     else
         fail "Could not find a password entry for '${1}'"
     fi

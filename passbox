@@ -382,7 +382,6 @@ _delete () {
     passname=${pass_vals[0]} &&
         password=$gpgpass &&
         write_pass
-    echo "${passname}"
 }
 
 

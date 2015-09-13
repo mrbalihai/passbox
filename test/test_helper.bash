@@ -60,7 +60,7 @@ assert_equal() {
 assert_length () {
     local p1=$1
     local p2=$2
-    if [ ${#p1} -ne ${p2} ]; then
+    if [ "${#p1}" -ne "${p2}" ]; then
         { echo "expected length: ${p2}"
             echo "actual length:   ${#p1}"
         } | flunk
@@ -101,7 +101,7 @@ assert_line_contains () {
 
 assert_line_length () {
     if [ "$1" -ge 0 ] 2>/dev/null; then
-        assert_length "${lines[$1]}" "$2"
+        assert_length ${lines[$1]} "$2"
     else
         flunk "No line number >1 specified"
     fi

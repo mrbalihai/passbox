@@ -39,40 +39,54 @@ check_deps () {
     fi
 }
 
-#######################################
-# Searches for an entry based on a given string (can be regex)
-#######################################
-search () {
-    local hasRecords=false
+# ###############################################################################################
+# Retrieves password records matching search term which can be ether a string literal or a regex.
+# Matching records are stored in the $records global array. An individual record is a SEPARATOR 
+# delimited string of the format: 
+#   [name<SEPARATOR>username<SEPARATOR>password]
+# ###############################################################################################
+get_records () {
     if [ ! -s "${PASSBOX}" ] ; then
         fail "No passwords found"
     fi
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
+    records=();
     while read -r line; do
-        split_line "${line}"
-        if [[ ${#pass_vals[@]} -gt 0 ]] ; then
-            echo
-            echo "Name: ${pass_vals[0]}"
-            echo "Username: ${pass_vals[1]}"
-            echo "Password: ${pass_vals[2]}"
-
-            # If there are >2 items in the array then there must be extra values
-            if [[ ${#pass_vals[@]} -gt 2 ]] ; then
-                for i in "${!pass_vals[@]}"
-                do
-                    # TODO: There could be a better way to do this e.g. start the loop at 2
-                    if [[ $i -gt 2 ]]; then
-
-                        # Split the additional values and echo them out
-                        split_extra_val "${pass_vals[i]}"
-                        echo "${extra_val[0]}: ${extra_val[1]}"
-                    fi
-                done
-            fi
-            hasRecords=true
-        fi
+        records+=("${line}");
     done < <(decrypt "${password}" | grep -i "$1")
-    if [ "$hasRecords" == false ]; then
+}
+
+# #######################################################################
+# Formats and prints to standard output the password records stored
+# in the $records global array. Prints a failure message if null or empty
+# #######################################################################
+print_records () {
+    if [ ! -z "${records+1}" ] && [ ! ${#records[@]} -eq 0 ] ; then
+        for record in "${records[@]}"
+        do
+            split_line "${record}"
+            if [[ ${#pass_vals[@]} -gt 0 ]] ; then
+                echo
+                echo "Name: ${pass_vals[0]}"
+                echo "Username: ${pass_vals[1]}"
+                echo "Password: ${pass_vals[2]}"
+
+                # If there are >2 items in the array then there must be extra values
+                if [[ ${#pass_vals[@]} -gt 2 ]] ; then
+                    for l in "${!pass_vals[@]}"
+                    do
+                        # TODO: There could be a better way to do this e.g. start the loop at 2
+                        if [[ $l -gt 2 ]]; then
+
+                            # Split the additional values and echo them out
+                            split_extra_val "${pass_vals[l]}"
+                            echo "${extra_val[0]}: ${extra_val[1]}"
+                        fi
+                    done
+                fi
+            fi
+        done
+    else
         fail "No entries found"
     fi
 }
@@ -303,7 +317,8 @@ EOF
 # Search the password database for a given string and output the result
 #######################################
 _search () {
-    search "$1"
+    get_records "$1"
+    print_records
 }
 
 #######################################
@@ -353,7 +368,8 @@ _update () {
 # Get a single entry from the database based on the entries name
 #######################################
 _get () {
-    search "^$1[${SEPERATOR}]"
+    get_records "^$1[${SEPERATOR}]"
+    print_records
     echo
 }
 

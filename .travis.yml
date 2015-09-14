@@ -1,7 +1,12 @@
+sudo: false
 language: bash
+notifications:
+    email:
+        on_success: never
+os:
+    - linux
+    - osx
 before_install:
-      - sudo add-apt-repository ppa:duggan/bats --yes
-      - sudo apt-get update -qq
-      - sudo apt-get install -qq bats
-script:
-    - bats -t test
+    - .ci/before-install.sh
+    - export PATH=$PATH:~/env/bin
+script: bats -t test

@@ -6,6 +6,9 @@ High test coverage with minimal dependencies.
 
 Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please check that project out as it might suit your needs better.
 
+Passbox is a tool for managing a GPG symmetrically encrypted file as a password database. Due to the highly configurable nature of GnuPG and passbox, all responsibility for keeping your passwords secure and backed up is on you. We will eventually put together a guide to give some pointers. (issue #6)
+
+
 ### Features
 - [x] Search/Add/Update/Delete password entries
 - [x] Generate random passwords
@@ -14,6 +17,8 @@ Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please
 - [ ] Configure settings such as passbox file location from '.passboxrc' config file
 
 ### Pre-requisites
+The aim is to support as many OSs as possible, the tests are ran against OSX and Linux only but Windows support could potentially be achieved though the use of Cygwin or MSYS (MSYS come free when you install Git on Windows)
+
 - GnuPG
 - Grep
 - Bash

@@ -19,7 +19,9 @@ setup () {
 
 teardown () {
     PASSBOX_LOCATION="$PREV_PASSBOX_LOCATION"
-    rm ./test/passbox.gpg
+    if [ -f ./test/passbox.gpg ]; then
+        rm ./test/passbox.gpg
+    fi
     unset PREV_PASSBOX_LOCATION
 }
 
@@ -107,6 +109,13 @@ assert_line_length () {
     fi
 }
 
+assert_line_count () {
+    local num_lines="${#lines[@]}"
+    if [ "$1" -ne "$num_lines" ]; then
+        flunk "output has $num_lines lines, not $1"
+    fi
+}
+
 refute_line () {
     if [ "$1" -ge 0 ] 2>/dev/null; then
         local num_lines="${#lines[@]}"
@@ -129,10 +138,18 @@ assert () {
     fi
 }
 
+assert_file_doesnt_exist () {
+    local file="$1"
+    if [ -f $file ]; then
+        { echo "file exists: ${1}"
+        } | flunk
+    fi
+}
+
 assert_file_exists () {
     local file="$1"
     if ![ -f $file ]; then
-        { echo "file does noto exist: ${1}"
+        { echo "file does not exist: ${1}"
         } | flunk
     fi
 }

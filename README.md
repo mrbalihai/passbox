@@ -4,8 +4,6 @@
 ## A simple command line password manager using bash and GPG
 High test coverage with minimal dependencies.
 
-**!Caution: if you enter a different password when writing to passbox, it will overwrite your entire file deleting all your passwords - issue #4 !**
-
 Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please check that project out as it might suit your needs better.
 
 ### Features

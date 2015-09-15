@@ -50,6 +50,7 @@ get_records () {
         fail "No passwords found"
     fi
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
+    fail_on_invalid_pass
     records=();
     while read -r line; do
         records+=("${line}");
@@ -112,7 +113,7 @@ gen_pass () {
 #######################################
 decrypt () {
     echo "${1}" | ${GPG} \
-        --decrypt --armor --batch \
+        --decrypt --armor --batch  \
         --passphrase-fd 0 "${PASSBOX}" 2>/dev/null
 }
 
@@ -154,7 +155,7 @@ write_entries () {
         grep -v -e "^[[:space:]]*$" |
         encrypt "${gpgpass}" -
 
-    echo "Done";
+    echo "Passbox saved";
 }
 
 #######################################
@@ -214,6 +215,10 @@ write_pass () {
     if [ -z "${gpgpass+x}" ]; then
         get_pass "Enter password to unlock ${PASSBOX}: " ; echo
         gpgpass=$password
+    fi
+
+    if [ -f $PASSBOX_LOCATION ]; then
+        fail_on_invalid_pass
     fi
 
     local result=$(decrypt "${password}")
@@ -288,6 +293,11 @@ get_extra_val () {
     fi
 }
 
+
+fail_on_invalid_pass () {
+    decrypt "${password}" >/dev/null || fail "Incorrect password"
+}
+
 #######################################
 # OPTION METHODS
 #######################################
@@ -347,7 +357,7 @@ _update () {
 
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
-
+    fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
     for i in "${!pass_vals[@]}"; do
@@ -381,7 +391,7 @@ _delete () {
 
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
-
+    fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
 
@@ -409,7 +419,7 @@ _add_field () {
 
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
-
+    fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
     split_line "${details}"
     if [[ ${#pass_vals[@]} -lt 2 ]]; then
@@ -436,7 +446,7 @@ _remove_field () {
 
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
-
+    fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^${1}[${SEPERATOR}]")
     split_line "${details}"
     if [[ ${#pass_vals[@]} -lt 1 ]]; then

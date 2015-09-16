@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/RobBollons/passbox.svg)](https://travis-ci.org/RobBollons/passbox)
+[![Build Status](https://travis-ci.org/RobBollons/passbox.svg?branch=master)](https://travis-ci.org/RobBollons/passbox)
 
 # PASSBOX
 ## A simple command line password manager using bash and GPG

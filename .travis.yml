@@ -3,10 +3,18 @@ language: bash
 notifications:
     email:
         on_success: never
-os:
-    - linux
-    - osx
+matrix:
+    include:
+        - os: linux
+          env: PASSBOX_ASYMMETRIC=false
+        - os: osx
+          env: PASSBOX_ASYMMETRIC=false
+        - os: linux
+          env: PASSBOX_RECIPIENT=test@example.com PASSBOX_ASYMMETRIC=true
+        - os: osx
+          env: PASSBOX_RECIPIENT=test@example.com PASSBOX_ASYMMETRIC=true
 before_install:
     - .ci/before-install.sh
     - export PATH=$PATH:~/env/bin
+    - gpg --batch --gen-key test/test-key-gen.conf
 script: bats -t test

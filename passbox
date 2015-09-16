@@ -15,6 +15,8 @@ set -o pipefail
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
 GPG=gpg
 SEPERATOR="|"
+GPG_USEASYM=${PASSBOX_ASYMMETRIC:=false}
+GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"
 
 #######################################
 # HELPERS
@@ -113,7 +115,7 @@ gen_pass () {
 #######################################
 decrypt () {
     echo "${1}" | ${GPG} \
-        --decrypt --armor --batch  \
+        --decrypt --armor --batch --quiet  \
         --passphrase-fd 0 "${PASSBOX}" 2>/dev/null
 }
 
@@ -121,10 +123,19 @@ decrypt () {
 #  Encrypt the file contents
 #######################################
 encrypt () {
-    ${GPG} \
-        --symmetric --armor --batch --yes \
-        --passphrase-fd 3 \
-        --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+    if [ "$GPG_USEASYM" == true ]; then
+        ${GPG} \
+            --encrypt --sign --armor --batch --yes \
+            --local-user="$GPG_RECIPIENT" \
+            --recipient="$GPG_RECIPIENT" \
+            --passphrase-fd 3 \
+            --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+    else
+        ${GPG} \
+            --symmetric --armor --batch --yes \
+            --passphrase-fd 3 \
+            --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+    fi
 }
 
 #######################################
@@ -230,11 +241,14 @@ write_pass () {
 #######################################
 # Prompts for a password, hiding the contents with stars
 # Based on https://github.com/drduh/pwd.sh
+# Argument $1 is the string to use for the prompt message
+# Argument $2 is true if we are attempting to get the master unlock password
 #######################################
 get_pass () {
     local prompt="${1}"
 
     password=''
+    # If we are getting the master password and using Asymmetric GPG then skip
     while IFS= read -p "${prompt}" -r -s -n 1 char ; do
         if [[ ${char} == $'\0' ]] ; then
             break
@@ -355,7 +369,7 @@ _update () {
     local gpgpass=""
     local addlfields=""
 
-    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " true ; echo
     gpgpass=${password}
     fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")

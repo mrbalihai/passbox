@@ -3,7 +3,7 @@
 load test_helper
 
 @test "get: Gets a formatted entry from the passbox file" {
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"
@@ -16,7 +16,7 @@ load test_helper
 }
 
 @test "get: Can return additional fields" {
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass|Field 1:Field 1 value|Field 2:Field 2 value" ) | encrypt "$db_password"
@@ -37,7 +37,7 @@ load test_helper
 }
 
 @test "get: Displays an error message if an entry cannot be found" {
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"

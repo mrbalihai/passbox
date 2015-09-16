@@ -5,7 +5,7 @@ load test_helper
 @test "update: Updates an existing entry in the passbox file" {
     local new_entry_username="updatedentry@test.com"
     local new_entry_pass="newpassword"
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"
@@ -24,7 +24,7 @@ load test_helper
 @test "update: Updates an existing entry in the passbox file that has a additional field" {
     local new_entry_username="updatedentry@test.com"
     local new_entry_pass="newpassword"
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234|Foo:Bar";
       echo "Entry 2|entry2@test.com|1234pass|Foo:Baz" ) | encrypt "$db_password"

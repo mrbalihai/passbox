@@ -4,7 +4,7 @@ load test_helper
 
 
 @test "search: Returns an entry that contains the search value in the Name " {
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|123456";
       echo "Entry 2|entry2@test.com|test1234") | encrypt "$db_password"
@@ -15,7 +15,7 @@ load test_helper
 }
 
 @test "search: Can return multiple results" {
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|123456";
       echo "Entry 2|entry2@test.com|test1234") | encrypt "$db_password"
@@ -27,7 +27,7 @@ load test_helper
 }
 
 @test "search: Can return additional fields" {
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|123456";
       echo "Entry 2|entry2@test.com|test1234|Field 1:field 1 value|Field 2:field 2 value") | encrypt "$db_password"

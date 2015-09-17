@@ -242,13 +242,11 @@ write_pass () {
 # Prompts for a password, hiding the contents with stars
 # Based on https://github.com/drduh/pwd.sh
 # Argument $1 is the string to use for the prompt message
-# Argument $2 is true if we are attempting to get the master unlock password
 #######################################
 get_pass () {
     local prompt="${1}"
 
     password=''
-    # If we are getting the master password and using Asymmetric GPG then skip
     while IFS= read -p "${prompt}" -r -s -n 1 char ; do
         if [[ ${char} == $'\0' ]] ; then
             break
@@ -369,7 +367,7 @@ _update () {
     local gpgpass=""
     local addlfields=""
 
-    get_pass "Enter password to unlock ${PASSBOX}: " true ; echo
+    get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
     fail_on_invalid_pass
     details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")

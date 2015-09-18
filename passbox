@@ -123,19 +123,21 @@ decrypt () {
 #  Encrypt the file contents
 #######################################
 encrypt () {
+    enctype_switch="--symmetric"
     if [ "$GPG_USEASYM" == true ]; then
-        ${GPG} \
-            --encrypt --sign --armor --batch --yes \
-            --local-user="$GPG_RECIPIENT" \
-            --recipient="$GPG_RECIPIENT" \
-            --passphrase-fd 3 \
-            --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+        recipient_switch="--local-user=\"$GPG_RECIPIENT\" --recipient=\"$GPG_RECIPIENT\""
+        if [[ "$GPG_RECIPIENT" == "" ]]; then
+            recipient_switch="--default-recipient-self"
+        fi
     else
+        enctype_switch="--encrypt"
+    fi
         ${GPG} \
-            --symmetric --armor --batch --yes \
+            $enctype_switch \
+            $recipient_switch \
+            --sign --armor --batch --yes \
             --passphrase-fd 3 \
             --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
-    fi
 }
 
 #######################################

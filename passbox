@@ -15,8 +15,8 @@ set -o pipefail
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
 GPG=gpg
 SEPERATOR="|"
-GPG_USEASYM=${PASSBOX_ASYMMETRIC:=false}
-GPG_RECIPIENT="$PASSBOX_RECIPIENT"
+GPG_USEASYM="${PASSBOX_ASYMMETRIC:=false}"
+GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"
 
 #######################################
 # HELPERS

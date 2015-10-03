@@ -2,13 +2,11 @@
 
 # PASSBOX
 #### A simple command line password manager using bash and a GPG encrypted flat file
-High test coverage with minimal dependencies.
+Passbox is a tool for managing a GPG encrypted text file as a password database.
 
-Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please check that project out as it might suit your needs better.
-
-Passbox is a tool for managing a GPG symmetrically encrypted text file as a password database.
 Please bear in mind that due to the highly configurable nature of GnuPG and passbox, all responsibility for keeping your passwords secure and backed up is on you.
 
+Credit to [drduh/pwd.sh](https://github.com/drduh/pwd.sh) for some ideas. Please check that project out as it might suit your needs better.
 
 ### Features
 - [x] Search/Add/Update/Delete password entries
@@ -19,7 +17,7 @@ Please bear in mind that due to the highly configurable nature of GnuPG and pass
 - [ ] Configure settings such as passbox file location from '.passboxrc' config file
 
 ### Pre-requisites
-The aim is to support as many OSs as possible, the tests are ran against OSX and Linux only but Windows support could potentially be achieved though the use of Cygwin or MSYS (MSYS come free when you install Git on Windows)
+The aim is to support as many OSs as possible, the tests are ran against OSX and Linux only but Windows support could potentially be achieved though the use of Cygwin or MSYS (MSYS comes along with a standard install of Git on Windows)
 
 - GnuPG
 - Grep
@@ -55,7 +53,7 @@ export PASSBOX_LOCATION='~/dropbox/passwords.gpg'
 Passbox uses *symmetric* encryption by default, this means that the data is encrypted using a simple passphrase. You can enable *asymmetric* encryption by setting the following environment varibales:
 ````
 export PASSBOX_ASYMMETRIC=true
-export PASSBOX_RECIPIENT=your@keyuser.com
+export PASSBOX_RECIPIENT=yourkeyuser@example.com
 ````
 Asymmetric cryptography uses a public key for encryption and the private key for decryption. You can generate yourself a public/private key pair by using `gpg --gen-key` and following the prompts.
 

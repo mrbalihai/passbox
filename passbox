@@ -43,8 +43,8 @@ check_deps () {
 
 # ###############################################################################################
 # Retrieves password records matching search term which can be ether a string literal or a regex.
-# Matching records are stored in the $records global array. An individual record is a SEPARATOR 
-# delimited string of the format: 
+# Matching records are stored in the $records global array. An individual record is a SEPARATOR
+# delimited string of the format:
 #   [name<SEPARATOR>username<SEPARATOR>password]
 # ###############################################################################################
 get_records () {
@@ -125,20 +125,29 @@ decrypt () {
 encrypt () {
     local recipient_switch=""
     local enctype_switch="--symmetric"
+    local local_user_switch=""
+    local sign_switch=""
+
     if [ "$GPG_USEASYM" == true ]; then
         enctype_switch="--encrypt"
-        recipient_switch="--local-user=\"$GPG_RECIPIENT\" --recipient=\"$GPG_RECIPIENT\""
+        recipient_switch="--recipient='$GPG_RECIPIENT'"
+        local_user_switch="--local-user='$GPG_RECIPIENT'"
+        sign_switch="--sign"
         if [[ "$GPG_RECIPIENT" == "" ]]; then
             recipient_switch="--default-recipient-self"
+            local_user_switch=""
         fi
     fi
 
     ${GPG} \
         $enctype_switch \
         $recipient_switch \
-        --sign --armor --batch --yes \
+        $local_user_switch \
+        $sign_switch \
+        --armor --batch --yes \
         --passphrase-fd 3 \
         --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+
 }
 
 #######################################

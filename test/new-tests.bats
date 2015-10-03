@@ -6,7 +6,7 @@ load test_helper
     local entry_name="Entry 1"
     local entry_username="entry1@test.com"
     local entry_password="pass1234"
-    local db_password="password 12345"
+    local db_password="test"
 
     run bash -c "( echo $entry_name;
                    echo $entry_username;
@@ -21,7 +21,7 @@ load test_helper
     local entry_name="Entry 1"
     local entry_username="entry1@test.com"
     local entry_password="pass1234"
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "$entry_name";
       echo "$entry_username";
@@ -38,7 +38,7 @@ load test_helper
     local entry_name="Entry 1"
     local entry_username="entry1@test.com"
     local entry_password="pass1234"
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password" >/dev/null

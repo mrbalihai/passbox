@@ -3,7 +3,7 @@
 load test_helper
 
 @test "delete: Removes an entry from the passbox file" {
-    local db_password="password 12345"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"

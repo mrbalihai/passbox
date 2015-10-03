@@ -3,7 +3,7 @@
 load test_helper
 
 @test "add-field: Adds additional fields to an existing entry" {
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass" ) | encrypt "$db_password"
@@ -18,7 +18,7 @@ load test_helper
 }
 
 @test "add-field: Adds multiple additional fields to an existing entry" {
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass|Field Name:Field Value" ) | encrypt "$db_password"

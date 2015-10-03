@@ -3,7 +3,7 @@
 load test_helper
 
 @test "remove-field: Removes an existing field from an existing entry" {
-    local db_password="password 123456"
+    local db_password="test"
 
     ( echo "Entry 1|entry1@test.com|pass1234";
       echo "Entry 2|entry2@test.com|1234pass|MyField:MyFieldValue|My Second Field:My Second Field Value" ) | encrypt "$db_password"

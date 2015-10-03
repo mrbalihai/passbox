@@ -15,6 +15,8 @@ set -o pipefail
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
 GPG=gpg
 SEPERATOR="|"
+GPG_USEASYM="${PASSBOX_ASYMMETRIC:=false}"
+GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"
 
 #######################################
 # HELPERS
@@ -41,8 +43,8 @@ check_deps () {
 
 # ###############################################################################################
 # Retrieves password records matching search term which can be ether a string literal or a regex.
-# Matching records are stored in the $records global array. An individual record is a SEPARATOR 
-# delimited string of the format: 
+# Matching records are stored in the $records global array. An individual record is a SEPARATOR
+# delimited string of the format:
 #   [name<SEPARATOR>username<SEPARATOR>password]
 # ###############################################################################################
 get_records () {
@@ -113,7 +115,7 @@ gen_pass () {
 #######################################
 decrypt () {
     echo "${1}" | ${GPG} \
-        --decrypt --armor --batch  \
+        --decrypt --armor --batch --quiet  \
         --passphrase-fd 0 "${PASSBOX}" 2>/dev/null
 }
 
@@ -121,10 +123,31 @@ decrypt () {
 #  Encrypt the file contents
 #######################################
 encrypt () {
+    local recipient_switch=""
+    local enctype_switch="--symmetric"
+    local local_user_switch=""
+    local sign_switch=""
+
+    if [ "$GPG_USEASYM" == true ]; then
+        enctype_switch="--encrypt"
+        recipient_switch="--recipient=$GPG_RECIPIENT"
+        local_user_switch="--local-user=$GPG_RECIPIENT"
+        sign_switch="--sign"
+        if [[ "$GPG_RECIPIENT" == "" ]]; then
+            recipient_switch="--default-recipient-self"
+            local_user_switch=""
+        fi
+    fi
+
     ${GPG} \
-        --symmetric --armor --batch --yes \
+        $enctype_switch \
+        $recipient_switch \
+        $local_user_switch \
+        $sign_switch \
+        --armor --batch --yes \
         --passphrase-fd 3 \
         --output "${PASSBOX}" "${2}" 3< <(echo "${1}")
+
 }
 
 #######################################
@@ -230,6 +253,7 @@ write_pass () {
 #######################################
 # Prompts for a password, hiding the contents with stars
 # Based on https://github.com/drduh/pwd.sh
+# Argument $1 is the string to use for the prompt message
 #######################################
 get_pass () {
     local prompt="${1}"

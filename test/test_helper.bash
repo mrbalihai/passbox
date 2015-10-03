@@ -1,12 +1,20 @@
 encrypt () {
-    gpg --symmetric --armor --batch --yes \
-        --command-fd 0 --passphrase "$1" \
-        --output $PASSBOX_LOCATION 2>/dev/null
+    if [ "$PASSBOX_ASYMMETRIC" == true ]; then
+        gpg --encrypt --sign --armor --batch --quiet \
+            --command-fd 0 --passphrase="$1" \
+            --local-user="$PASSBOX_RECIPIENT" \
+            --recipient="$PASSBOX_RECIPIENT" \
+            --output=$PASSBOX_LOCATION 2>/dev/null
+    else
+        gpg --symmetric --armor --batch --yes --quiet \
+            --command-fd 0 --passphrase="$1" \
+            --output=$PASSBOX_LOCATION 2>/dev/null
+    fi
 }
 
 decrypt () {
     gpg \
-        --decrypt --armor --batch \
+        --decrypt --armor --batch --quiet \
         --command-fd 0 --passphrase "${1}" "${2}" 2>/dev/null
 }
 

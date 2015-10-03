@@ -130,8 +130,8 @@ encrypt () {
 
     if [ "$GPG_USEASYM" == true ]; then
         enctype_switch="--encrypt"
-        recipient_switch="--recipient='$GPG_RECIPIENT'"
-        local_user_switch="--local-user='$GPG_RECIPIENT'"
+        recipient_switch="--recipient=$GPG_RECIPIENT"
+        local_user_switch="--local-user=$GPG_RECIPIENT"
         sign_switch="--sign"
         if [[ "$GPG_RECIPIENT" == "" ]]; then
             recipient_switch="--default-recipient-self"

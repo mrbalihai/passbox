@@ -79,16 +79,21 @@ print_records () {
         do
             split_line "${record}"
             if [[ ${#pass_vals[@]} -gt 0 ]] ; then
+
+                # We copy to the clipboard up front to detect any clipboard errors 
+                # ahead of time and display the necessary fail message
+                local password_message=
+                if [[ $clipboard == true ]] ; then
+                    copy_to_clipboard "${pass_vals[2]}"
+                    password_message="Password copied to clipboard";
+                else
+                    password_message="Password: ${pass_vals[2]}";
+                fi
+
                 echo
                 echo "Name: ${pass_vals[0]}"
                 echo "Username: ${pass_vals[1]}"
-
-                if [[ $clipboard == true ]] ; then
-                    copy_to_clipboard "${pass_vals[2]}"
-                    echo "Password copied to clipboard"
-                else
-                    echo "Password: ${pass_vals[2]}"
-                fi
+                echo "${password_message}"
 
                 # If there are >2 items in the array then there must be extra values
                 if [[ ${#pass_vals[@]} -gt 2 ]] ; then
@@ -112,22 +117,27 @@ print_records () {
 
 copy_to_clipboard () {
     local platform=$(uname || "")
+    local fail_message="Unable to detect clipboard integration vector"
 
     # Clipboard support test
-    if [[ ! -z $( echo "$platform" | grep -i "cygwin" ) ]] ; then
+    if [[ ! -z $( echo "$platform" | grep -Ei "(cygwin|mingw32|msys)" ) ]] ; then
         printf "%s" ${1} >> ${CYGWIN_CLIPBOARD}
     elif [[ ! -z $( echo $platform | grep -i "darwin" ) ]] ; then # OS X
         if [[ ! -z ${PBCOPY} && ! -x ${PBCOPY} ]] ; then
             printf "%s" ${1} | ${PBCOPY}
+        else
+            fail ${fail_message}
         fi
-    elif [[ ! -z $( echo $platform | grep -i "linux" ) ]] ; then
-        if [[ ! -z ${XCLIP} && ! -x ${XCLIP} ]] ; then
+    elif [[ ! -z $( echo $platform | grep -Ei "(linux|sunos|gnu|bsd|dragonfly|minix)" ) ]] ; then
+        if [[ ! -z ${XCLIP} && ! -x ${XCLIP} && $(${XCLIP} -v > /dev/null 2>&1) ]] ; then
             printf "%s" ${1} | ${XCLIP}
-        elif [[ ! -z ${XSEL} && ! -x ${XSEL} ]] ; then
+        elif [[ ! -z ${XSEL} && ! -x ${XSEL} && $(${XSEL} -v > /dev/null 2>&1) ]] ; then
             printf "%s" ${1} | ${XSEL}
+        else
+            fail ${fail_message}
         fi
     else
-        fail 'Unable to determine clipboard'
+        fail ${fail_message}
     fi
 }
 

@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #
 # Script for managing passwords in a symmetrically encrypted file using GnuPG.
 #
@@ -13,10 +14,17 @@ set -o pipefail
 
 # Defaults
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
-GPG=gpg
 SEPERATOR="|"
 GPG_USEASYM="${PASSBOX_ASYMMETRIC:=false}"
 GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"
+
+# Clipboard applications
+CYGWIN_CLIPBOARD=/dev/clipboard
+PBCOPY=pbcopy
+XCLIP=xclip
+XSEL=xsel
+
+GPG=gpg
 
 #######################################
 # HELPERS
@@ -37,7 +45,7 @@ fail () {
 #######################################
 check_deps () {
     if [[ -z ${GPG} && ! -x ${GPG} ]] ; then
-      fail "GnuPG is not available"
+        fail "GnuPG is not available"
     fi
 }
 
@@ -64,22 +72,35 @@ get_records () {
 # in the $records global array. Prints a failure message if null or empty
 # #######################################################################
 print_records () {
+    local clipboard=${1:-}
+
     if [ ! -z "${records+1}" ] && [ ! ${#records[@]} -eq 0 ] ; then
         for record in "${records[@]}"
         do
             split_line "${record}"
             if [[ ${#pass_vals[@]} -gt 0 ]] ; then
+
+                # We copy to the clipboard up front to detect any clipboard errors 
+                # ahead of time and display the necessary fail message
+                local password_message=
+                if [[ $clipboard == true ]] ; then
+                    copy_to_clipboard "${pass_vals[2]}"
+                    password_message="Password copied to clipboard";
+                else
+                    password_message="Password: ${pass_vals[2]}";
+                fi
+
                 echo
                 echo "Name: ${pass_vals[0]}"
                 echo "Username: ${pass_vals[1]}"
-                echo "Password: ${pass_vals[2]}"
+                echo "${password_message}"
 
                 # If there are >2 items in the array then there must be extra values
                 if [[ ${#pass_vals[@]} -gt 2 ]] ; then
                     for l in "${!pass_vals[@]}"
                     do
                         # TODO: There could be a better way to do this e.g. start the loop at 2
-                        if [[ $l -gt 2 ]]; then
+                        if [[ ${l} -gt 2 ]]; then
 
                             # Split the additional values and echo them out
                             split_extra_val "${pass_vals[l]}"
@@ -91,6 +112,32 @@ print_records () {
         done
     else
         fail "No entries found"
+    fi
+}
+
+copy_to_clipboard () {
+    local platform=$(uname || "")
+    local fail_message="Unable to detect clipboard integration vector"
+
+    # Clipboard support test
+    if [[ ! -z $( echo "$platform" | grep -Ei "(cygwin|mingw32|msys)" ) ]] ; then
+        printf "%s" ${1} >> ${CYGWIN_CLIPBOARD}
+    elif [[ ! -z $( echo $platform | grep -i "darwin" ) ]] ; then # OS X
+        if [[ ! -z ${PBCOPY} && ! -x ${PBCOPY} ]] ; then
+            printf "%s" ${1} | ${PBCOPY}
+        else
+            fail ${fail_message}
+        fi
+    elif [[ ! -z $( echo $platform | grep -Ei "(linux|sunos|gnu|bsd|dragonfly|minix)" ) ]] ; then
+        if [[ ! -z ${XCLIP} && ! -x ${XCLIP} && $(${XCLIP} -v > /dev/null 2>&1) ]] ; then
+            printf "%s" ${1} | ${XCLIP}
+        elif [[ ! -z ${XSEL} && ! -x ${XSEL} && $(${XSEL} -v > /dev/null 2>&1) ]] ; then
+            printf "%s" ${1} | ${XSEL}
+        else
+            fail ${fail_message}
+        fi
+    else
+        fail ${fail_message}
     fi
 }
 
@@ -402,8 +449,11 @@ _update () {
 # Get a single entry from the database based on the entries name
 #######################################
 _get () {
-    get_records "^$1[${SEPERATOR}]"
-    print_records
+    local search_term=$1
+    local clipboard=$2
+
+    get_records "^${search_term}[${SEPERATOR}]"
+    print_records $clipboard
     echo
 }
 
@@ -497,43 +547,72 @@ if [[ $# == 0 ]] ; then
     _usage
 else
     case $1 in
-        search)
+
+        search )
             if ! [ -n "${2+1}" ] ; then
                 fail "Please specify a string to search for"
             fi
             _search "$2"
             ;;
-        get)
-            if ! [ -n "${2+1}" ] ; then
+
+        get )
+            shift
+            copy_to_clipboard=false
+            search_term=
+
+            while [[ ! -z ${1:-} ]] ; do
+                case $1 in
+                    --clipboard | -c )
+                        copy_to_clipboard=true
+                        ;;
+                    -* )
+                        fail "Invalid option (${1})"
+                        ;;
+                    * )
+                        search_term="$1"
+                        break
+                        ;;
+                esac
+                shift
+            done
+
+            if ! [ -n "${search_term}" ] ; then
                 fail "Please specify the name of an entry to get"
+            else
+                _get "${search_term}" "${copy_to_clipboard}"
             fi
-            _get "$2"
             ;;
-        generate|gen)
+
+        generate|gen )
             _gen_pass
             ;;
-        new)
+
+        new )
             _new
             ;;
-        update)
+
+        update )
             if ! [ -n "${2+1}" ] ; then
                 fail "Please specify the name of an entry to update"
             fi
             _update "$2"
             ;;
-        delete)
+
+        delete )
             if ! [ -n "${2+1}" ] ; then
                 fail "Please specify the name of an entry to delete"
             fi
             _delete "$2"
             ;;
-        add-field)
+
+        add-field )
             if ! [ -n "${2+1}" ] ; then
                 fail "Please specify the name of an entry to add a field to"
             fi
             _add_field "$2"
             ;;
-        remove-field)
+
+        remove-field )
             if ! [ -n "${2+1}" ] ; then
                 fail "Please specify the name of an entry to remove a field from"
             fi
@@ -542,9 +621,11 @@ else
             fi
             _remove_field "$2" "$3"
             ;;
-        --help|help)
+
+        --help | help | -h )
             _usage
             ;;
+
         *)
             _usage
             ;;

@@ -50,7 +50,7 @@ The default location of the passbox file is '~/passbox.gpg' however this can be 
 export PASSBOX_LOCATION='~/dropbox/passwords.gpg'
 ````
 
-Passbox uses *symmetric* encryption by default, this means that the data is encrypted using a simple passphrase. You can enable *asymmetric* encryption by setting the following environment varibales:
+Passbox uses *symmetric* encryption by default, this means that the data is encrypted using a simple passphrase. You can enable *asymmetric* encryption by setting the following environment variables:
 ````
 export PASSBOX_ASYMMETRIC=true
 export PASSBOX_RECIPIENT=yourkeyuser@example.com

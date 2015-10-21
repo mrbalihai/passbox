@@ -13,7 +13,7 @@ set -o pipefail
 
 # Defaults
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
-GPG=gpg
+GPG="$(command -v gpg2 || command -v gpg)"
 SEPERATOR="|"
 GPG_USEASYM="${PASSBOX_ASYMMETRIC:=false}"
 GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"

@@ -331,7 +331,7 @@ fail_on_invalid_pass () {
 #######################################
 _usage () {
 cat << EOF
-usage: $0 [action]
+usage: $(basename "$0") [action]
 
 Passbox - command line password manager utility
 

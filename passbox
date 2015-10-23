@@ -14,7 +14,7 @@ set -o pipefail
 # Defaults
 PASSBOX=${PASSBOX_LOCATION:=~/passbox.gpg}
 GPG="$(command -v gpg2 || command -v gpg)"
-SEPERATOR="|"
+SEPARATOR="|"
 GPG_USEASYM="${PASSBOX_ASYMMETRIC:=false}"
 GPG_RECIPIENT="${PASSBOX_RECIPIENT:=}"
 
@@ -156,7 +156,7 @@ encrypt () {
 strip_entry () {
     local input="${1}"
     local passname="${2}"
-    echo "${input}" | grep -v -e "^${passname}[${SEPERATOR}]"
+    echo "${input}" | grep -v -e "^${passname}[${SEPARATOR}]"
 }
 
 #######################################
@@ -232,7 +232,7 @@ write_pass () {
     if [ -z "${userpass+x}" ] ; then
         new_entry_string=""
     else
-        new_entry_string="${passname}${SEPERATOR}${username}${SEPERATOR}${userpass}${addlfields}"
+        new_entry_string="${passname}${SEPARATOR}${username}${SEPARATOR}${userpass}${addlfields}"
     fi
 
     if [ -z "${gpgpass+x}" ]; then
@@ -277,11 +277,11 @@ get_pass () {
 }
 
 #######################################
-# Splits a line based on the given seperator into an array
+# Splits a line based on the given separator into an array
 #######################################
 split_line () {
     local oldIFS=IFS
-    IFS="${SEPERATOR}" read -ra pass_vals <<< "$1"
+    IFS="${SEPARATOR}" read -ra pass_vals <<< "$1"
     IFS=$oldIFS
 }
 
@@ -363,7 +363,7 @@ _gen_pass () {
 }
 
 #######################################
-# Prompt to create a new entry in the pasword database
+# Prompt to create a new entry in the password database
 #######################################
 _new () {
     new_details &&
@@ -373,7 +373,7 @@ _new () {
 }
 
 #######################################
-# Update an existing entry in the datbase
+# Update an existing entry in the database
 #######################################
 _update () {
     local gpgpass=""
@@ -382,11 +382,11 @@ _update () {
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
     fail_on_invalid_pass
-    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPARATOR}]")
     split_line "${details}"
     for i in "${!pass_vals[@]}"; do
         if [[ $i -gt 2 ]]; then
-            addlfields="$addlfields$SEPERATOR${pass_vals[i]}"
+            addlfields="$addlfields$SEPARATOR${pass_vals[i]}"
         fi
     done
     if [[ ${#pass_vals[@]} -gt 1 ]] ; then
@@ -402,7 +402,7 @@ _update () {
 # Get a single entry from the database based on the entries name
 #######################################
 _get () {
-    get_records "^$1[${SEPERATOR}]"
+    get_records "^$1[${SEPARATOR}]"
     print_records
     echo
 }
@@ -416,7 +416,7 @@ _delete () {
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
     fail_on_invalid_pass
-    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPARATOR}]")
     split_line "${details}"
 
     if [[ ${#pass_vals[@]} == 0 ]] ; then
@@ -444,7 +444,7 @@ _add_field () {
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
     fail_on_invalid_pass
-    details=$(decrypt "${password}" | grep -i "^$1[${SEPERATOR}]")
+    details=$(decrypt "${password}" | grep -i "^$1[${SEPARATOR}]")
     split_line "${details}"
     if [[ ${#pass_vals[@]} -lt 2 ]]; then
         fail "Could not find a password entry for '${1}'"
@@ -454,7 +454,7 @@ _add_field () {
     password=$gpgpass
     read -p "Field Name: " field_name
     read -p "Field Value: " field_value
-    new_entry_string="${details}${SEPERATOR}${field_name}:${field_value}"
+    new_entry_string="${details}${SEPARATOR}${field_name}:${field_value}"
 
     local result=$(decrypt "${password}")
     result=$(strip_entry "${result}" "${passname}")
@@ -471,7 +471,7 @@ _remove_field () {
     get_pass "Enter password to unlock ${PASSBOX}: " ; echo
     gpgpass=${password}
     fail_on_invalid_pass
-    details=$(decrypt "${password}" | grep -i "^${1}[${SEPERATOR}]")
+    details=$(decrypt "${password}" | grep -i "^${1}[${SEPARATOR}]")
     split_line "${details}"
     if [[ ${#pass_vals[@]} -lt 1 ]]; then
         fail "Could not find a password entry for '${1}'"
